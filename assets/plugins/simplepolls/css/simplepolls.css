@@ -1,0 +1,26 @@
+#SimplePolls .pagination select, #SimplePolls .pagination input {
+    width:auto;
+    height:auto;
+}
+#SimplePolls .pagination td {
+    vertical-align: middle;
+}
+#SimplePolls .datagrid-view td {
+    padding:0 5px;
+    vertical-align: middle;
+}
+#SimplePolls .datagrid-header-inner td {
+    vertical-align: middle;
+}
+#SimplePolls .datagrid-header-check, .datagrid-cell-check {
+    height:auto;
+}
+#SimplePolls .datagrid-row-selected {
+    color: rgb(255, 255, 255);
+    background: rgb(0, 129, 194);
+}
+#SimplePolls .datagrid-row-selected input {
+    color: rgb(255, 255, 255);
+    background: transparent;
+    border:0;
+}

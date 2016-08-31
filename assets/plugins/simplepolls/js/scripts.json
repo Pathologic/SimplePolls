@@ -1,0 +1,44 @@
+{
+  "scripts": {
+    "EasyUI" : {
+      "version":"1.5.0",
+      "src":"assets/js/easy-ui/jquery.easyui.min.js"
+    },
+    "detailview": {
+      "version":"1.4.1",
+      "src":"assets/js/easy-ui/plugins/jquery.datagrid-detailview.js"
+    },
+    "datagrid-dnd" : {
+      "version":"1.5.0",
+      "src":"assets/js/easy-ui/plugins/jquery.datagrid-dnd.js"
+    },
+    "edatagrid" : {
+      "version":"1.5.0",
+      "src":"assets/js/easy-ui/plugins/jquery.edatagrid.js"
+    },
+    "easyui-lang-[+lang+]":{
+      "version":"1.5.0",
+      "src":"assets/js/easy-ui/locale/easyui-lang-[+lang+].js"
+    },
+    "handlebars":{
+      "version":"2.0.0",
+      "src":"assets/js/handlebars/handlebars.runtime.min.js"
+    },
+    "templates":{
+      "version":"1.0.0",
+      "src":"assets/plugins/simplepolls/js/tpl/templates.js"
+    },
+    "SimplePolls":{
+      "version":"1.0.0",
+      "src":"assets/plugins/simplepolls/js/plugin/simplepolls.js"
+    },
+    "Polls":{
+      "version":"1.0.0",
+      "src":"assets/plugins/simplepolls/js/plugin/polls.js"
+    },
+    "imageBrowser" : {
+      "version":"1.4.1",
+      "src":"assets/js/easy-ui/editors/imageBrowser.js"
+    }
+  }
+}
