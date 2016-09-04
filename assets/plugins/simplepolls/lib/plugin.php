@@ -82,11 +82,13 @@ CREATE TABLE IF NOT EXISTS `{$prefix}sp_log` (
 `ip` varchar(255) NOT NULL default '',
 `uid` int(10) default NULL,
 `votedon` datetime NOT NULL,
+`voters` int(10) default 1,
 PRIMARY KEY  (`id`),
 KEY `poll` (`poll`),
 KEY `ip` (`ip`),
 KEY `uid` (`uid`),
-KEY `votedon` (`votedon`)
+KEY `votedon` (`votedon`),
+KEY `voters` (`voters`)
 ) ENGINE=MyISAM COMMENT='Log table for SimplePolls plugin.';
 OUT;
         $flag &= $this->modx->db->query($sql);

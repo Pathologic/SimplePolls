@@ -9,8 +9,15 @@ class Log extends \autoTable {
         'poll' => 0, //id голосования
         'ip' => 0, //ip пользователя
         'uid' => 0, //id пользователя
+        'voters' => 1, //количество проголосовавших, для накруток
         'votedon' => 0 //время голосования
     );
+
+    /**
+     * Удаление записей о голосованиях
+     * @param $ids
+     * @return $this
+     */
     public function deletePoll($ids) {
         $_ids = $this->cleanIDs($ids, ',');
         if (is_array($_ids) && $_ids != array()) {
@@ -22,6 +29,7 @@ class Log extends \autoTable {
         $this->query("ALTER TABLE {$this->makeTable($this->table)} AUTO_INCREMENT = 1");
         return $this;
     }
+
     public function save($fire_events = null, $clearCache = false) {
         $this->touch('votedon');
         return parent::save($fire_events,$clearCache);

@@ -131,20 +131,26 @@ var Vote = {};
                     toolbar:[
                         {
                             iconCls: 'icon-add',
-                            text: 'Создать вариант',
+                            text: 'Создать',
                             id:'createVote',
                             handler: function(){Vote.create(ddv,row.poll_id)}
                         },{
                             iconCls: 'icon-remove',
-                            text: 'Удалить вариант',
+                            text: 'Удалить',
                             id: 'removeVote',
                             handler: function(){SimplePolls.deleteRecord(ddv,'vote')}
                         },{
                             iconCls: 'icon-clear',
-                            text: 'Обнулить вариант',
+                            text: 'Обнулить',
                             id:'resetVote',
-                            handler: function(){Vote.reset()}
+                            handler: function(){SimplePolls.clearVotes(ddv,'vote')}
                         },{
+                            iconCls: 'icon-edit',
+                            text: 'Корректировать',
+                            id:'resetVote',
+                            handler: function(){Vote.correct(ddv)}
+                        },
+                        {
                             iconCls: 'icon-reload',
                             text: 'Обновить',
                             handler: function(){ddv.datagrid('reload')}
@@ -292,7 +298,7 @@ var Vote = {};
                                     $('#pollGrid').edatagrid('reload');
                                 } else {
                                     $.messager.alert('Ошибка', data.message,'error',function () {
-                                        $('#importDialog').dialog('close');
+                                        $('#addPollDialog').dialog('close');
                                     })
                                 }
                             },
@@ -314,7 +320,6 @@ var Vote = {};
                 var context = {
                     data: $('#pollGrid').edatagrid('getSelected')
                 };
-                console.log(context);
                 var form = Handlebars.templates.addPoll(context);
                 $(this).html(form);
                 $('#poll_begin').datetimebox({
@@ -350,4 +355,67 @@ var Vote = {};
             }
         });
     };
+    Vote.correct = function(grid) {
+        var ids = [];
+        var options = grid.datagrid('options');
+        var pkField = options.idField;
+        var row = grid.edatagrid('getSelected');
+        if (row) ids.push(row[pkField]);
+        if (ids.length){
+            $('<div id="correctVoteDialog" style="padding:10px;"><p>Укажите количество дополнительных голосов</p><input type="text" id="correct" value="10" style="width:70px;"></div>').dialog({
+                width:'360px',
+                title: 'Корректировать результаты',
+                buttons:[
+                    {
+                        iconCls:'icon-save',
+                        text:'Выполнить',
+                        handler:function(){
+                            $.post(
+                                SimplePolls.Config.url,
+                                {
+                                    mode: 'correct',
+                                    controller:'vote',
+                                    ids:ids.join(),
+                                    num:$('#correct').val()
+                                },
+                                function(data){
+                                    if (data.success) {
+                                        $('#correctVoteDialog').dialog('destroy');
+                                        grid.datagrid('reload');
+                                    } else {
+                                        $.messager.alert('Ошибка', data.message,'error',function () {
+                                            $('#correctVoteDialog').dialog('close');
+                                        })
+                                    }
+                                },
+                                'json'
+                            ).fail(function() {
+                                $.messager.alert('Ошибка', 'Произошла ошибка','error');
+                            })
+                        }
+                    },
+                    {
+                        iconCls:'icon-cancel',
+                        text:'Отмена',
+                        handler:function(){
+                            $('#correctVoteDialog').dialog('destroy');
+                        }
+                    }
+                ],
+                onBeforeOpen: function() {
+                    $('#correct').numberspinner({
+                        min: 1,
+                        height:22,
+                        max: null,
+                        editable: true
+                    });
+                    $(this).dialog('center');
+                },
+                onClose:function() {
+                    $(this).dialog('destroy');
+                },
+                modal: true
+            });
+        }
+    }
 })(jQuery);

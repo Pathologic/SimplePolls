@@ -45,8 +45,13 @@ class VoteController {
         if ($out) return $this->vote->toArray();
     }
 
-    public function change() {
-
+    public function correct() {
+        $out = array();
+        $id = isset($_REQUEST['ids']) && is_scalar($_REQUEST['ids']) ? (int)$_REQUEST['ids'] : 0;
+        $num  = isset($_REQUEST['num']) && is_scalar($_REQUEST['num']) ? (int)$_REQUEST['num'] : 0;
+        $this->vote->correct($id, $num);
+        $out['success'] = true;
+        return $out;
     }
 
     public function remove()

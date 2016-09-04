@@ -1,6 +1,7 @@
 <?php
 include_once (MODX_BASE_PATH.'assets/snippets/DocLister/core/controller/onetable.php');
 class dl_simplepollsDocLister extends onetableDocLister {
+    //выборка голосований с подсчетом голосов
     protected function getDocList()
     {
         $out = array();

@@ -28,6 +28,7 @@ class Poll extends \autoTable {
     }
 
     public function delete($ids, $fire_events = null) {
+        //при удалении голосований удаляем варианты и записи в логе
         $this->vote->deletePoll($ids);
         $this->log->deletePoll($ids);
         parent::delete($ids, $fire_events);
@@ -36,26 +37,38 @@ class Poll extends \autoTable {
     }
 
     public function reset($ids) {
+        //при обнулении голосований обнуляем голоса за варианты и удаляем записи в логе
         $this->vote->resetPoll($ids);
         $this->log->deletePoll($ids);
-        $ids = $this->cleanIDs($ids);
         return $this;
     }
 
+    /**
+     * Голосование за список вариантов
+     * @param null $ids
+     * @return $this|bool
+     */
     public function vote($ids = null){
         if (!$ids) return false;
         $ids = $this->cleanIDs($ids);
+        //увеличиваем число голосов за варианты
         $this->vote->vote($ids);
+        //записываем в лог запись о голосовании
         $this->log->create(array(
             'poll'  =>  $this->getID(),
             'ip'    =>  $this->getUserIP(),
             'uid'   =>  $this->modx->getLoginUserID('web')
         ))->save();
+        //устанавливаем куку
         $cookie = md5('poll'.$this->getID());
         setcookie($cookie, rand(), strtotime($this->get('poll_end')), '/');
         return $this;
     }
 
+    /**
+     * Получение вариантов для голосования
+     * @return array
+     */
     public function getVotes(){
         if (!$this->newDoc) {
             $out = array();

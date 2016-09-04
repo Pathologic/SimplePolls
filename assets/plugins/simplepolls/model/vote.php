@@ -4,7 +4,6 @@ include_once (MODX_BASE_PATH . 'assets/lib/MODxAPI/autoTable.abstract.php');
 class Vote extends \autoTable {
     protected $table = 'sp_votes';
     protected $pkName = 'vote_id';
-    protected $spLog = null;
     public $default_field = array(
         'vote_id' => 0,
         'vote_title' => '', //название варианта,
@@ -14,10 +13,11 @@ class Vote extends \autoTable {
         'vote_rank' => 0, //позиция в списке
     );
 
-    public function __construct($modx) {
-        parent::__construct($modx);
-    }
-
+    /**
+     * Обнуление заданных вариантов
+     * @param $ids
+     * @return $this
+     */
     public function reset($ids) {
         $_ids = $this->cleanIDs($ids, ',');
         if (is_array($_ids) && $_ids != array()) {
@@ -29,6 +29,12 @@ class Vote extends \autoTable {
         return $this;
     }
 
+    /**
+     * Удаление вариантов для заданных голосований
+     * @param $ids
+     * @return $this
+     * @throws \Exception
+     */
     public function deletePoll($ids) {
         $_ids = $this->cleanIDs($ids, ',');
         if (!empty($_ids)) {
@@ -36,11 +42,17 @@ class Vote extends \autoTable {
             if(!empty($id)){
                 $this->query("DELETE from {$this->makeTable($this->table)} where `vote_poll` IN ({$id})");
             }
-        } else throw new Exception('Invalid IDs list for delete: <pre>' . print_r($ids, 1) . '</pre>');
+        } else throw new \Exception('Invalid IDs list for delete: <pre>' . print_r($ids, 1) . '</pre>');
         $this->query("ALTER TABLE {$this->makeTable($this->table)} AUTO_INCREMENT = 1");
         return $this;
     }
 
+    /**
+     * Обнуление вариантов для заданных голосований
+     * @param $ids
+     * @return $this
+     * @throws \Exception
+     */
     public function resetPoll($ids) {
         $_ids = $this->cleanIDs($ids, ',');
         if (!empty($_ids)) {
@@ -48,7 +60,7 @@ class Vote extends \autoTable {
             if(!empty($id)){
                 $this->query("UPDATE {$this->makeTable($this->table)} SET `vote_value`=0 WHERE`vote_poll` IN ({$id})");
             }
-        } else throw new Exception('Invalid IDs list for reset: <pre>' . print_r($ids, 1) . '</pre>');
+        } else throw new \Exception('Invalid IDs list for reset: <pre>' . print_r($ids, 1) . '</pre>');
         return $this;
     }
 
@@ -66,6 +78,21 @@ class Vote extends \autoTable {
         $id = implode(',',$_ids);
         if(!empty($id)){
             $this->query("UPDATE {$this->makeTable($this->table)} SET `vote_value`=`vote_value` + 1 WHERE `vote_id` IN ({$id})");
+        }
+    }
+
+    public function correct($id, $num = 0) {
+        if (is_integer($num) && $num > 0 && $id) {
+            $this->query("UPDATE {$this->makeTable($this->table)} SET `vote_value`=`vote_value` + {$num} WHERE `vote_id` IN ({$id}) AND (`vote_value` + {$num}) > 0");
+            $this->close();
+            $poll = $this->edit($id)->get('vote_poll');
+            include_once('log.php');
+            $log = new Log($this->modx);
+            $log->create(array(
+                'poll' => $poll,
+                'ip' => '127.0.0.1',
+                'voters' => $num
+            ))->save();
         }
     }
 
