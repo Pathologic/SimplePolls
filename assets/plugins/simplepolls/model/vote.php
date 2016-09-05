@@ -14,22 +14,6 @@ class Vote extends \autoTable {
     );
 
     /**
-     * Обнуление заданных вариантов
-     * @param $ids
-     * @return $this
-     */
-    public function reset($ids) {
-        $_ids = $this->cleanIDs($ids, ',');
-        if (is_array($_ids) && $_ids != array()) {
-            $id = $this->sanitarIn($_ids);
-            if(!empty($id)){
-                $this->query("UPDATE {$this->makeTable($this->table)} SET `vote_value`=0 WHERE`vote_id` IN ({$id})");
-            }
-        } else throw new Exception('Invalid IDs list for reset: <pre>' . print_r($ids, 1) . '</pre>');
-        return $this;
-    }
-
-    /**
      * Удаление вариантов для заданных голосований
      * @param $ids
      * @return $this
@@ -77,22 +61,17 @@ class Vote extends \autoTable {
         $_ids = $this->cleanIDs($ids, ',');
         $id = implode(',',$_ids);
         if(!empty($id)){
-            $this->query("UPDATE {$this->makeTable($this->table)} SET `vote_value`=`vote_value` + 1 WHERE `vote_id` IN ({$id})");
+            $this->query("UPDATE {$this->makeTable($this->table)} SET `vote_value`=(`vote_value` + 1) WHERE `vote_id` IN ({$id})");
         }
     }
 
     public function correct($id, $num = 0) {
         if (is_integer($num) && $num > 0 && $id) {
-            $this->query("UPDATE {$this->makeTable($this->table)} SET `vote_value`=`vote_value` + {$num} WHERE `vote_id` IN ({$id}) AND (`vote_value` + {$num}) > 0");
+            $this->query("UPDATE {$this->makeTable($this->table)} SET `vote_value`=(`vote_value` + {$num}) WHERE `vote_id` IN ({$id}) AND (`vote_value` + {$num}) > 0");
             $this->close();
             $poll = $this->edit($id)->get('vote_poll');
-            include_once('log.php');
-            $log = new Log($this->modx);
-            $log->create(array(
-                'poll' => $poll,
-                'ip' => '127.0.0.1',
-                'voters' => $num
-            ))->save();
+            $this->query("UPDATE {$this->modx->getFullTableName('sp_polls')} SET `poll_voters`=(`poll_voters` + {$num}) WHERE `poll_id` = {$poll}");
+            $this->close();
         }
     }
 

@@ -82,7 +82,7 @@ class Polls extends Core {
             //если голосование активно, разрешено для пользователя и не тайное, то показываем общее количество голосов и голосовавших
             $total = !$poll['properties']['hide_results'] && $poll['poll_isactive'] && $permissions['user'] ? $this->parseChunk($this->getCFGDef('totalTpl'),$poll) : '';
             //показываем время начала и конца голосования или сообщение о завершении голосования
-            $info = $this->parseChunk($this->getCFGDef($poll['poll_isactive'] ? 'infoActiveTpl' : 'infoFinishedTpl'),$poll);
+            $info = $this->parseChunk($this->getCFGDef($poll['poll_isactive'] ? ($mode == 'results' ? '' : 'infoActiveTpl') : 'infoFinishedTpl'),$poll);
             $plh = array(
                 $mode => $this->renderVotes($poll),
                 'info' => $info,
@@ -231,20 +231,19 @@ class Polls extends Core {
         if ($pollIds) {
             $pollIds = $this->config->loadArray($pollIds);
             $pollIds = implode(',',$this->poll->cleanIDs($pollIds));
-            $where = "`polls`.`poll_id` IN ({$pollIds})";
+            $where = "`poll_id` IN ({$pollIds})";
         } else {
         //если указаны id ресурсов
             $parents = (int)$this->getCFGDef('parent',$this->modx->documentIdentifier);
             $parents = implode(',',$this->poll->cleanIDs($parents));
-            $where = "`polls`.`poll_parent` IN ({$parents})";
+            $where = "`poll_parent` IN ({$parents})";
         }
         $updateIds = array();
         $polls = array();
 
         $pollsTable = $this->modx->getFullTableName('sp_polls');
-        $logTable = $this->modx->getFullTableName('sp_log');
-        //присоединяем записи из лога, чтобы подсчитать число проголосовавших
-        $result = $this->modx->db->query("SELECT `polls`.*, SUM(`log`.`voters`) AS `total_voters` FROM {$pollsTable} `polls` LEFT JOIN {$logTable} `log` ON `polls`.`poll_id`=`log`.`poll` WHERE {$where} GROUP BY `polls`.`poll_id` ORDER BY `poll_parent` ASC, `poll_rank` DESC");
+
+        $result = $this->modx->db->query("SELECT * FROM {$pollsTable} WHERE {$where} ORDER BY `poll_parent` ASC, `poll_rank` DESC");
 
         while ($row = $this->modx->db->getRow($result)) {
             $id = $row['poll_id'];
@@ -401,8 +400,8 @@ class Polls extends Core {
             $this->polls[$poll]['votes'] = $votes['votes'];
             //обновляем общее число голосов
             $this->polls[$poll]['total_votes'] = $votes['total'];
-            //количество проголосовавших просто увеличиваем на 1, чтобы не делать лишний запрос запрос
-            $this->polls[$poll]['total_voters'] += 1;
+            //обновляем общее число участников
+            $this->polls[$poll]['poll_voters'] += 1;
             //запрещаем голосовать
             $this->polls[$poll]['permissions']['vote'] = false;
             //разрешаем смотреть результаты

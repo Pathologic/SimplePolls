@@ -51,12 +51,14 @@ CREATE TABLE IF NOT EXISTS `{$prefix}sp_polls` (
 `poll_rank` int(10) NOT NULL default '0',
 `poll_begin` datetime NOT NULL,
 `poll_end` datetime NOT NULL,
+`poll_voters` int(10) NOT NULL default '0',
 PRIMARY KEY  (`poll_id`),
 KEY `poll_isactive` (`poll_isactive`),
 KEY `poll_parent` (`poll_parent`),
 KEY `poll_rank` (`poll_rank`),
 KEY `poll_begin` (`poll_begin`),
-KEY `poll_end` (`poll_end`)
+KEY `poll_end` (`poll_end`),
+KEY `poll_voters` (`poll_voters`)
 ) ENGINE=MyISAM COMMENT='Polls table for SimplePolls plugin.';
 OUT;
         $flag = $this->modx->db->query($sql);
@@ -66,8 +68,8 @@ CREATE TABLE IF NOT EXISTS `{$prefix}sp_votes` (
 `vote_image` varchar(255) NOT NULL default '',
 `vote_title` varchar(255) NOT NULL default '',
 `vote_poll` int(10) default NULL,
-`vote_rank` int(10) default NULL,
-`vote_value` int(10) default NULL,
+`vote_rank` int(10) NOT NULL default 0,
+`vote_value` int(10) default 0,
 PRIMARY KEY  (`vote_id`),
 KEY `vote_rank` (`vote_rank`),
 KEY `vote_poll` (`vote_poll`),
@@ -82,13 +84,11 @@ CREATE TABLE IF NOT EXISTS `{$prefix}sp_log` (
 `ip` varchar(255) NOT NULL default '',
 `uid` int(10) default NULL,
 `votedon` datetime NOT NULL,
-`voters` int(10) default 1,
 PRIMARY KEY  (`id`),
 KEY `poll` (`poll`),
 KEY `ip` (`ip`),
 KEY `uid` (`uid`),
-KEY `votedon` (`votedon`),
-KEY `voters` (`voters`)
+KEY `votedon` (`votedon`)
 ) ENGINE=MyISAM COMMENT='Log table for SimplePolls plugin.';
 OUT;
         $flag &= $this->modx->db->query($sql);

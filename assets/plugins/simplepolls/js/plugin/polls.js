@@ -140,11 +140,6 @@ var Vote = {};
                             id: 'removeVote',
                             handler: function(){SimplePolls.deleteRecord(ddv,'vote')}
                         },{
-                            iconCls: 'icon-clear',
-                            text: 'Обнулить',
-                            id:'resetVote',
-                            handler: function(){SimplePolls.clearVotes(ddv,'vote')}
-                        },{
                             iconCls: 'icon-edit',
                             text: 'Корректировать',
                             id:'resetVote',

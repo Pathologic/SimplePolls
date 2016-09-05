@@ -3,7 +3,7 @@
   "votesTpl":"@CODE:<h3>[+poll_title+]</h3>[+info+][+total+]<form method=\"post\"><input type=\"hidden\" name=\"poll\" value=\"[+poll_id+]\"><input type=\"hidden\" name=\"formid\" value=\"poll\">[+votes+]<br><img src=\"[+captcha+]\"><br><input name=\"vericode\" type=\"text\"><br><br>[+controls+]</form>",
   "resultsTpl":"@CODE:<h3>[+poll_title+] - результаты</h3>[+info+][+total+][+results+][+status+]",
   "mixedTpl":"@CODE:<h3>[+poll_title+] - результаты</h3>[+info+][+total+]<form method=\"post\"><input type=\"hidden\" name=\"poll\" value=\"[+poll_id+]\"><input type=\"hidden\" name=\"formid\" value=\"poll\">[+mixed+][+status+]<br><img src=\"[+captcha+]\"><br><input name=\"vericode\" type=\"text\"><br><br>[+controls+]</form>",
-  "totalTpl":"@CODE:<p>Всего голосов: [+total_votes+]. Всего участников: [+total_voters+].</p>",
+  "totalTpl":"@CODE:<p>Всего голосов: [+total_votes+]. Всего участников: [+poll_voters+].</p>",
   "controlsTpl":"@CODE:<div>[+voteBtn+][+resultsBtn+]</div>",
   "voteBtnTpl":"@CODE:<button type=\"submit\" name=\"finish\" class=\"btn btn-primary\">Голосовать</button>&nbsp;",
   "resultsBtnTpl":"@CODE:<button type=\"submit\" name=\"results\" class=\"btn btn-success\">Результаты</button>",

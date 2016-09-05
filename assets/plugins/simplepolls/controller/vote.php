@@ -67,20 +67,6 @@ class VoteController {
         return $out;
     }
 
-    public function reset()
-    {
-        $out = array();
-        $ids = isset($_REQUEST['ids']) ? (string)$_REQUEST['ids'] : '';
-        $out['success'] = false;
-        if (!empty($ids)) {
-            if ($this->vote->reset($ids)) {
-                $out['success'] = true;
-            }
-        }
-        return $out;
-    }
-
-
     public function listing() {
         $pollId =  isset($_REQUEST['vote_poll']) ? (int)$_REQUEST['vote_poll'] : 0;
         $this->dlParams['addWhereList'] = "`vote_poll`={$pollId}";

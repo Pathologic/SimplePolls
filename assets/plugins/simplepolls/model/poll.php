@@ -15,7 +15,8 @@ class Poll extends \autoTable {
         'poll_begin' => 0, //дата начала
         'poll_end' => 0, //дата завершения
         'poll_rank' => 0, //позиция в списке,
-        'poll_properties' => ''
+        'poll_properties' => '',
+        'poll_voters' => 0
     );
     protected $jsonFields = array(
         'poll_properties' //настройки голосования
@@ -40,6 +41,7 @@ class Poll extends \autoTable {
         //при обнулении голосований обнуляем голоса за варианты и удаляем записи в логе
         $this->vote->resetPoll($ids);
         $this->log->deletePoll($ids);
+        $this->query("UPDATE {$this->makeTable($this->table)} SET `poll_voters`=0 WHERE `poll_id` IN ({$ids})");
         return $this;
     }
 
@@ -53,6 +55,7 @@ class Poll extends \autoTable {
         $ids = $this->cleanIDs($ids);
         //увеличиваем число голосов за варианты
         $this->vote->vote($ids);
+        $this->query("UPDATE {$this->makeTable($this->table)} SET `poll_voters`=(`poll_voters` + 1) WHERE `poll_id` = {$this->getID()}");
         //записываем в лог запись о голосовании
         $this->log->create(array(
             'poll'  =>  $this->getID(),
@@ -77,11 +80,13 @@ class Poll extends \autoTable {
                 $out[] = $row;
             }
             $total = array_sum(array_column($out,'vote_value'));
+            $voters = array_sum(array_column($out,'vote_voters'));
             foreach ($out as &$vote) {
                 $vote['percent'] = $total ? round(100*$vote['vote_value']/$total,2) : 0;
                 $vote['total_votes'] = $total;
+                $vote['total_voters'] = $voters;
             }
-            return array('total'=>$total,'votes'=>$out);
+            return array('total'=>$total,'voters'=>$voters,'votes'=>$out);
         }
     }
 
