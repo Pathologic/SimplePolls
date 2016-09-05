@@ -80,13 +80,11 @@ class Poll extends \autoTable {
                 $out[] = $row;
             }
             $total = array_sum(array_column($out,'vote_value'));
-            $voters = array_sum(array_column($out,'vote_voters'));
             foreach ($out as &$vote) {
                 $vote['percent'] = $total ? round(100*$vote['vote_value']/$total,2) : 0;
                 $vote['total_votes'] = $total;
-                $vote['total_voters'] = $voters;
             }
-            return array('total'=>$total,'voters'=>$voters,'votes'=>$out);
+            return array('total'=>$total,'votes'=>$out);
         }
     }
 
