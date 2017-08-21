@@ -171,7 +171,7 @@ class Polls extends Core
                 }
                 //если голосование активное, но тайное, то показываем сообщение об этом
                 if (($poll['properties']['hide_results'] && $poll['poll_isactive'] && !$this->isMixedResultsMode()) || $this->getCFGDef('alwaysHideResults',
-                            0)
+                            0) || ($poll['properties']['hide_results'] && $poll['poll_isactive'] && !$permissions['vote'])
                 ) {
                     $out = $this->parseChunk($this->getCFGDef('resultsHiddenTpl'), $poll);
                     break;
