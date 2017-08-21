@@ -1,12 +1,18 @@
 <?php namespace SimplePolls;
 include_once (MODX_BASE_PATH . 'assets/plugins/simplepolls/model/poll.php');
 include_once (MODX_BASE_PATH . 'assets/lib/APIHelpers.class.php');
+
+/**
+ * Class PollController
+ * @package SimplePolls
+ */
 class PollController {
     protected $modx = null;
     protected $poll = null;
     public $dlParams = array(
         "controller"    =>  "dl_simplepolls",
         "table"         =>  "sp_polls",
+        "selectFields"  =>  "c.*,IFNULL(`v`.`poll_votes`,0) AS `poll_votes`",
         "idField"       =>  "poll_id",
         "api"           =>  1,
         "idType"        =>  "documents",
@@ -14,15 +20,21 @@ class PollController {
         "JSONformat"    =>  "new",
         "display"       =>  10,
         "offset"        =>  0,
-        "orderBy"       =>  "poll_rank DESC",
         "dir"           =>  "assets/plugins/simplepolls/controller/dl/"
     );
 
+    /**
+     * PollController constructor.
+     * @param \DocumentParser $modx
+     */
     public function __construct (\DocumentParser $modx) {
         $this->modx = $modx;
         $this->poll = new Poll($modx);
     }
 
+    /**
+     * @return array
+     */
     public function create() {
         $rid = (int)$_REQUEST['poll_parent'];
         if (!$rid) return array('success'=>false);
@@ -53,6 +65,9 @@ class PollController {
         if ($out) return array('success'=>true,'data'=>$this->poll->toArray());
     }
 
+    /**
+     * @return array
+     */
     public function edit() {
         if (!isset($_REQUEST['poll_id'])) return array('success'=>false);
         $id = (int)$_REQUEST['poll_id'];
@@ -82,6 +97,9 @@ class PollController {
         if ($out) return array('success'=>true);
     }
 
+    /**
+     * @return array
+     */
     public function remove()
     {
         $out = array();
@@ -95,6 +113,9 @@ class PollController {
         return $out;
     }
 
+    /**
+     * @return array
+     */
     public function reset()
     {
         $out = array();
@@ -108,6 +129,9 @@ class PollController {
         return $out;
     }
 
+    /**
+     * @return string
+     */
     public function listing() {
         $rid = isset($_REQUEST['rid']) ? (int)$_REQUEST['rid'] : 0;
         $this->dlParams['addWhereList'] = "`poll_parent`={$rid}";
@@ -122,6 +146,12 @@ class PollController {
         $offset = $offset ? $offset : 1;
         $offset = $this->dlParams['display']*abs($offset-1);
         $this->dlParams['offset'] = $offset;
+        if (isset($_POST['sort'])) {
+            $this->dlParams['sortBy'] = preg_replace('/[^A-Za-z0-9_\-]/', '', $_POST['sort']);
+        }
+        if (isset($_POST['order']) && in_array(strtoupper($_POST['order']), array("ASC", "DESC"))) {
+            $this->dlParams['sortDir'] = $_POST['order'];
+        }
         return $this->modx->runSnippet("DocLister", $this->dlParams);
     }
 }

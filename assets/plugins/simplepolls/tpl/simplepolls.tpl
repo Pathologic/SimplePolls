@@ -2,7 +2,6 @@
     (function($){
         SimplePolls.Config = {
             rid:[+id+],
-            theme:'[+theme+]',
             loaded:false,
             url:'[+url+]',
             fileBrowserUrl:'[+kcfinder_url+]',
@@ -10,24 +9,33 @@
             noImage:'[+noImage+]',
             thumbPrefix:'[+thumb_prefix+]'
         };
-        $(window).load(function(){
+        $('#documentPane').on('click','#SimplePollsTab',function(){
+            if (SimplePolls.Config.loaded) {
+                $('#pollGrid').edatagrid('reload');
+                $(window).trigger('resize');
+            } else {
+                SimplePolls.init();
+                SimplePolls.Config.loaded = true;
+            }
+        });
+        $(window).on('load', function(){
             if ($('#SimplePollsTab')) {
                 $('#SimplePollsTab.selected').trigger('click');
             }
         });
-        $(document).ready(function(){
-            $('#SimplePollsTab').click(function(){
-                if (SimplePolls.Config.loaded) {
-                    $('#pollGrid').datagrid('reload');
-                } else {
-                    SimplePolls.init();
-                    SimplePolls.Config.loaded = true;
-                    $(window).trigger('resize'); //stupid hack
-                }
-            })
+        $(window).on('resize',function(){
+            if ($('#SimplePollsTab').hasClass('selected')) {
+                clearTimeout(this.timeout);
+                this.timeout = setTimeout(function () {
+                    $('#SimplePolls').width($('body').width() - 60);
+                    if (SimplePolls.Config.loaded) {
+                        $('#pollGrid').datagrid('getPanel').panel('resize');
+                    }
+                }, 300);
+            }
         })
-    })(jQuery)
+})(jQuery)
 </script>
-<div id="SimplePolls" class="tab-page" style="width:100%;-moz-box-sizing: border-box; box-sizing: border-box;">
+<div id="SimplePolls" class="tab-page">
     <h2 class="tab" id="SimplePollsTab">[+tabName+]</h2>
 </div>

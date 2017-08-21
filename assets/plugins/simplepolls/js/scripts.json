@@ -1,30 +1,34 @@
 {
   "scripts": {
     "EasyUI" : {
-      "version":"1.5.0",
+      "version":"1.5.2",
       "src":"assets/js/easy-ui/jquery.easyui.min.js"
     },
-    "detailview": {
-      "version":"1.4.1",
-      "src":"assets/js/easy-ui/plugins/jquery.datagrid-detailview.js"
-    },
     "datagrid-dnd" : {
-      "version":"1.5.0",
+      "version":"1.5.2",
       "src":"assets/js/easy-ui/plugins/jquery.datagrid-dnd.js"
     },
     "edatagrid" : {
-      "version":"1.5.0",
+      "version":"1.5.2",
       "src":"assets/js/easy-ui/plugins/jquery.edatagrid.js"
     },
+    "detailview": {
+      "version":"1.5.2",
+      "src":"assets/js/easy-ui/plugins/datagrid-detailview.js"
+    },
     "easyui-lang-[+lang+]":{
-      "version":"1.5.0",
+      "version":"1.5.2",
       "src":"assets/js/easy-ui/locale/easyui-lang-[+lang+].js"
     },
     "handlebars":{
       "version":"2.0.0",
       "src":"assets/js/handlebars/handlebars.runtime.min.js"
     },
-    "templates":{
+    "helpers":{
+      "version":"2.0.0",
+      "src":"assets/js/handlebars/helpers.js"
+    },
+    "SimplePollsTemplates":{
       "version":"1.0.0",
       "src":"assets/plugins/simplepolls/js/tpl/templates.js"
     },

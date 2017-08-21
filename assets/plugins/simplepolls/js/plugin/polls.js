@@ -6,7 +6,6 @@ var Vote = {};
         $('#pollGrid').datagrid({
             url: SimplePolls.Config.url+'?rid='+SimplePolls.Config.rid,
             title: "Голосования",
-            height:'750px',
             fitColumns:true,
             pagination:true,
             idField:'poll_id',
@@ -15,9 +14,10 @@ var Vote = {};
             checkOnSelect:false,
             selectOnCheck:false,
             emptyMsg:'Голосания еще не созданы',
+            sortName: 'poll_rank',
+            sortOrder: 'DESC',
             columns: [[
                 {field:'select',checkbox:true},
-                {field:'poll_rank',hidden:true},
                 {field:'poll_title',title:'Тема голосования',width:160,sortable:false,
                     formatter: function(value,row) {
                         return '['+row.poll_id+'] '+value
@@ -27,38 +27,42 @@ var Vote = {};
                             .replace(/"/g, '&quot;');
                     }
                 },
-                {field:'poll_begin',title:'Начало',width:70,sortable:false},
-                {field:'poll_end',title:'Конец',width:70,sortable:false},
-                {field:'poll_isactive',title:'',width:44,fixed:true,sortable:false,
+                {field:'poll_begin',title:'Начало',width:120,fixed:true,sortable:true},
+                {field:'poll_end',title:'Конец',width:120,fixed:true,sortable:true},
+                {field:'poll_isactive',title:'',width:48,fixed:true,sortable:true,
                     formatter: function(value,row){
                         if (row.poll_isactive == 1){
-                            out = '<span style="font-size:12px;color:green;">&#127761;</span>';
+                            out = '<span class="fa fa-circle" style="color:green;" title="Активно">&nbsp;</span>';
                         } else {
-                            out = '<span style="font-size:12px;color:red;">&#127761;</span>';
+                            out = '<span class="fa fa-circle" style="font-size:12px;color:red;" title="Завершено">&nbsp;</span>';
                         }
                         if (row.poll_properties.users_only ==1){
-                            out += '<span style="font-size:14px;">&#128273;</span>';
+                            out += '<span class="fa fa-key" title="Только для пользователей">&nbsp;</span>';
                         }
                         if (row.poll_properties.hide_results ==0){
-                            out += '<span style="font-size:14px;">&#9733;</span>';
+                            out += '<span class="fa fa-star" title="Открытое голосование">&nbsp;</span>';
                         }
                         return out;
                     }
                 },
-                {field:'poll_votes',title:'Голоса',width:60,fixed:true,sortable:false}
+                {field:'poll_votes',title:'Голоса/Участники',align:'center',width:120,fixed:true,sortable:true,
+                    formatter: function(value,row){
+                        return row.poll_votes + '/' + row.poll_voters;
+                    }
+                }
             ]],
             toolbar:[
                 {
-                    iconCls: 'icon-add',
+                    iconCls: 'fa fa-file',
                     text: 'Создать голосование',
                     handler: function(){Poll.create()}
                 },{
-                    iconCls: 'icon-remove',
+                    iconCls: 'fa fa-trash',
                     text: 'Удалить голосование',
                     id: 'removePoll',
                     handler: function(){SimplePolls.deleteRecord($('#pollGrid'),'poll')}
                 },{
-                    iconCls: 'icon-clear',
+                    iconCls: 'fa fa-undo',
                     text: 'Обнулить голосование',
                     id:'resetPoll',
                     handler: function(){SimplePolls.clearVotes($('#pollGrid'),'poll')}
@@ -68,14 +72,13 @@ var Vote = {};
             detailFormatter: function(index, row) {
                 return '<div style="padding:5px 5px 15px;">' +
                     '<p>Максимальное количество голосов: ' + row.poll_properties.max_votes + '; ' +
-                    'Только для пользователей: ' + row.poll_properties.users_only + '; ' +
-                    'Не показывать результаты до завершения: ' + row.poll_properties.hide_results + '</p>' +
-                    '<table class="ddv"></table></div>'
-                    ;
+                    (row.poll_properties.users_only ? 'Только для пользователей' + '; ' : '') +
+                    (row.poll_properties.hide_results ? 'Не показывать результаты до завершения' : '') +                          '</p><table class="ddv" id="child'+row.poll_id+'"></table></div>';
             },
             onExpandRow: function(parentIndex,row){
                 var parent = $(this);
-                var ddv = parent.datagrid('getRowDetail',parentIndex).find('table.ddv');
+                var poll_id = row.poll_id;
+                var ddv = $('#child'+poll_id);
                 ddv.edatagrid({
                     title:'Варианты для голосования',
                     emptyMsg:'Варианты еще не созданы',
@@ -91,6 +94,7 @@ var Vote = {};
                     height:'auto',
                     idField:'vote_id',
                     columns:[[
+                        {field:'vote_rank', hidden:true},
                         {field:'vote_title',title:'Название варианта',width:100,
                             editor:{
                                 type:'text'
@@ -103,14 +107,14 @@ var Vote = {};
                                     .replace(/"/g, '&quot;');
                             }
                         },
-                        {field: 'vote_image', title: 'Картинка', width: 100, fixed: true,
-                            formatter: function(value,row){
-                            return '<img style="width:80px;height:80px;padding:3px 0;" src="'+(value == '' ? SimplePolls.Config.siteUrl+SimplePolls.Config.noImage : SimplePolls.Config.thumbPrefix+value)+'">';
+                        {field: 'vote_image', title: 'Картинка', width: 88, fixed: true,
+                            formatter: function(value){
+                            return '<img style="width:80px;height:80px;" src="'+(value == '' ? SimplePolls.Config.siteUrl+SimplePolls.Config.noImage : SimplePolls.Config.thumbPrefix+value)+'">';
                             },
                             editor: {
                                 type: 'imageBrowser',
                                 options: {
-                                    css: 'height:80px;width:80px;padding:3px 0;margin:0 auto;display:block;',
+                                    css: 'height:80px;width:80px;margin:0 auto;display:block;',
                                     thumb_prefix: SimplePolls.Config.thumbPrefix,
                                     noImage: SimplePolls.Config.siteUrl+SimplePolls.Config.noImage,
                                     browserUrl: SimplePolls.Config.fileBrowserUrl,
@@ -118,44 +122,62 @@ var Vote = {};
                                 }
                             }
                         },
-                        {field:'vote_value',title:'Голоса',fixed:true,width:60}
+                        {field:'vote_value',title:'Голоса',align:'center',fixed:true,width:60},
+                        {field:'vote_blocked',align:'center',title:'Блок',width:44,fixed:true,sortable:false,
+                            formatter:function(value){
+                                if (value == 1) {
+                                    return '<span style="color:red;">Да</span>';
+                                }
+                                else {
+                                    return 'Нет'
+                                }
+                            },
+                            editor:{
+                                type:'checkbox',
+                                options:{
+                                    on: 1,
+                                    off: 0
+                                }
+                            }
+                        }
                     ]],
                     onResize:function(){
-                        parent.edatagrid('fixDetailRowHeight',parentIndex);
+                        parent.edatagrid('fixDetailRowHeight',parentIndex).edatagrid('fixRowHeight',parentIndex);
                     },
                     onLoadSuccess:function(){
+                        $(this).datagrid('enableDnd');
                         setTimeout(function(){
-                            parent.edatagrid('fixDetailRowHeight',parentIndex);
+                            parent.edatagrid('fixDetailRowHeight',parentIndex).edatagrid('fixRowHeight',parentIndex);
                         },50);
                     },
                     toolbar:[
                         {
-                            iconCls: 'icon-add',
-                            text: 'Создать',
+                            iconCls: 'fa fa-file',
+                            text: 'Создать вариант',
                             id:'createVote',
                             handler: function(){Vote.create(ddv,row.poll_id)}
                         },{
-                            iconCls: 'icon-remove',
+                            iconCls: 'fa fa-trash',
                             text: 'Удалить',
                             id: 'removeVote',
                             handler: function(){SimplePolls.deleteRecord(ddv,'vote')}
                         },{
-                            iconCls: 'icon-edit',
+                            iconCls: 'fa fa-edit',
                             text: 'Корректировать',
                             id:'resetVote',
                             handler: function(){Vote.correct(ddv)}
                         },
                         {
-                            iconCls: 'icon-reload',
+                            iconCls: 'fa fa-refresh',
                             text: 'Обновить',
                             handler: function(){ddv.datagrid('reload')}
                         },'-',{
-                            iconCls: 'icon-save',
+                            iconCls: 'fa fa-check',
                             text: 'Сохранить',
                             id:'saveVote',
                             handler: function(){ddv.edatagrid('saveRow')}
                         },{
-                            iconCls: 'icon-cancel',
+                            iconCls: 'fa fa-ban',
                             text: 'Отмена',
                             id:'cancelVote',
                             handler: function(){ddv.edatagrid('cancelRow')}
@@ -165,13 +187,13 @@ var Vote = {};
                         row.editing = true;
                         $('#saveVote,#cancelVote').linkbutton('enable');
                         $('#createVote,#removeVote,#resetVote').linkbutton('disable');
-                        parent.datagrid('fixDetailRowHeight',parentIndex);
+                        parent.edatagrid('fixDetailRowHeight',parentIndex).edatagrid('fixRowHeight',parentIndex);
                     },
                     onAfterEdit: function (index, row) {
                         row.editing = false;
                         $('#saveVote,#cancelVote').linkbutton('disable');
                         $('#createVote,#removeVote,#resetVote').linkbutton('enable');
-                        parent.edatagrid('fixDetailRowHeight',parentIndex);
+                        parent.edatagrid('fixDetailRowHeight',parentIndex).edatagrid('fixRowHeight',parentIndex);
                     },
                     onBeforeLoad: function() {
                         $(this).edatagrid('clearChecked');
@@ -182,14 +204,84 @@ var Vote = {};
                         row.editing = false;
                         $('#saveVote,#cancelVote').linkbutton('disable');
                         $('#createVote,#removeVote,#resetVote').linkbutton('enable');
-                        parent.edatagrid('fixDetailRowHeight',parentIndex);
+                        parent.edatagrid('fixDetailRowHeight',parentIndex).edatagrid('fixRowHeight',parentIndex);
                     },
                     onSave:function(){
-                        ddv.edatagrid('reload');
-                        parent.edatagrid('fixDetailRowHeight',parentIndex);
+                        $(this).edatagrid('reload');
+                        parent.edatagrid('fixDetailRowHeight',parentIndex).edatagrid('fixRowHeight',parentIndex);
+                    },
+                    onBeforeDrag: function (row) {
+                        $(this).parent().find('tr.datagrid-row').addClass('droppable');
+                        if (!row.editing) {
+                            $('body').css('overflow-x', 'hidden');
+                            $('.datagrid-body',$(this)).css('overflow-y', 'hidden');
+                        } else {
+                            return false;
+                        }
+                    },
+                    onBeforeDrop: function (targetRow, sourceRow, point) {
+                        var grid = $(this);
+                        $('body').css('overflow-x', 'auto');
+                        $('.datagrid-body',grid).css('overflow-y', 'auto');
+                        this.targetRow = targetRow;
+                        this.targetRow.index = tgt = grid.edatagrid('getRowIndex', targetRow);
+                        this.sourceRow = sourceRow;
+                        this.sourceRow.index = src = grid.edatagrid('getRowIndex', sourceRow);
+                        this.point = point;
+                        dif = tgt - src;
+                        if ((point == 'bottom' && dif == -1) || (point == 'top' && dif == 1)) return false;
+                    },
+                    onDrop: function (targetRow, sourceRow, point) {
+                        var grid = $(this);
+                        var idField = 'vote_id';
+                        var indexField = 'vote_rank';
+                        var indexName = 'vote_rank';
+                        var orderDir = 'desc';
+                        src = this.sourceRow.index;
+                        tgt = this.targetRow.index;
+                        var data = {
+                            'controller':'vote',
+                            'target':{},
+                            'source':{},
+                            'point': point,
+                            'vote_poll': poll_id,
+                            'orderDir': 'desc'
+                        };
+                        data['target'][idField] = targetRow[idField];
+                        data['target'][indexField] = targetRow[indexField];
+                        data['source'][idField] = sourceRow[idField];
+                        data['source'][indexField] = sourceRow[indexField];
+
+                        $.ajax({
+                            url: SimplePolls.Config.url+'?mode=reorder',
+                            type: 'post',
+                            dataType: 'json',
+                            data: data
+                        }).done(function (response) {
+                            if (!response.success) {
+                                $.messager.alert('Ошибка', 'Произошла ошибка','error');
+                                grid.edatagrid('reload');
+                            } else {
+                                rows = grid.edatagrid('getRows');
+                                if (tgt < src) {
+                                    rows[tgt][indexName] = targetRow[indexName];
+                                    for (var i = tgt; i <= src; i++) {
+                                        rows[i][indexName] = rows[i - 1] != undefined ? rows[i - 1][indexName] - (orderDir == 'desc' ? 1 : -1) : rows[i][indexName];
+                                        grid.edatagrid('refreshRow', i);
+                                    }
+                                } else {
+                                    rows[tgt][indexName] = targetRow[indexName];
+                                    for (var i = tgt; i >= src; i--) {
+                                        rows[i][indexName] = rows[i + 1] != undefined ? parseInt(rows[i + 1][indexName]) + (orderDir == 'desc' ? 1 : -1) : rows[i][indexName];
+                                        grid.edatagrid('refreshRow', i);
+                                    }
+                                }
+                            }
+                        }).fail(function() {
+                            $.messager.alert('Ошибка', 'Произошла ошибка','error');
+                        });
                     }
                 });
-                parent.datagrid('fixDetailRowHeight',parentIndex);
             },
             onBeforeLoad: function() {
                 $(this).edatagrid('clearChecked');
@@ -206,7 +298,7 @@ var Vote = {};
             title: 'Новое голосование',
             buttons:[
                 {
-                    iconCls:'icon-save',
+                    iconCls:'btn-green fa fa-check',
                     text:'Сохранить',
                     handler:function(){
                         $.post(
@@ -229,7 +321,7 @@ var Vote = {};
                     }
                 },
                 {
-                    iconCls:'icon-cancel',
+                    iconCls:'fa fa-ban btn-red',
                     text:'Отмена',
                     handler:function(){
                         $('#addPollDialog').dialog('destroy');
@@ -281,7 +373,7 @@ var Vote = {};
             title: 'Редактировать голосование',
             buttons:[
                 {
-                    iconCls:'icon-save',
+                    iconCls:'fa fa-check btn-green',
                     text:'Сохранить',
                     handler:function(){
                         $.post(
@@ -304,7 +396,7 @@ var Vote = {};
                     }
                 },
                 {
-                    iconCls:'icon-cancel',
+                    iconCls:'fa fa-ban btn-red',
                     text:'Отмена',
                     handler:function(){
                         $('#addPollDialog').dialog('destroy');
@@ -362,7 +454,7 @@ var Vote = {};
                 title: 'Корректировать результаты',
                 buttons:[
                     {
-                        iconCls:'icon-save',
+                        iconCls:'fa fa-check btn-green',
                         text:'Выполнить',
                         handler:function(){
                             $.post(
@@ -390,7 +482,7 @@ var Vote = {};
                         }
                     },
                     {
-                        iconCls:'icon-cancel',
+                        iconCls:'fa fa-ban btn-red',
                         text:'Отмена',
                         handler:function(){
                             $('#correctVoteDialog').dialog('destroy');

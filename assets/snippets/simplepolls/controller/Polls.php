@@ -1,8 +1,14 @@
 <?php namespace FormLister;
-include_once (MODX_BASE_PATH . 'assets/snippets/FormLister/core/FormLister.abstract.php');
-include_once (MODX_BASE_PATH . 'assets/plugins/simplepolls/model/poll.php');
 
-class Polls extends Core {
+include_once(MODX_BASE_PATH . 'assets/snippets/FormLister/core/FormLister.abstract.php');
+include_once(MODX_BASE_PATH . 'assets/plugins/simplepolls/model/poll.php');
+
+/**
+ * Class Polls
+ * @package FormLister
+ */
+class Polls extends Core
+{
     public $polls = array(); //данные по голосованиям
     public $templates = array();
     public $poll = null;
@@ -10,56 +16,81 @@ class Polls extends Core {
     public $userInfo = array(); //инфа о пользователи
     public $captcha = array();
 
+    /**
+     * Core constructor.
+     * @param \DocumentParser $modx
+     * @param array $cfg
+     */
     public function __construct(\DocumentParser $modx, array $cfg)
     {
         parent::__construct($modx, $cfg);
         $this->poll = new \SimplePolls\Poll($modx);
         $this->userInfo = array(
-            'uid'=>(int)$this->modx->getLoginUserID('web'),
-            'ip'=>$this->poll->getUserIP()
+            'uid' => (int)$this->modx->getLoginUserID('web'),
+            'ip'  => $this->poll->getUserIP()
         );
         $this->setPolls();
         $this->config->setConfig(array(
-            'formTpl'=>$this->getCFGDef('tpl')
+            'formTpl' => $this->getCFGDef('tpl')
         ));
     }
 
-    public function render(){
+    /**
+     * Сценарий работы
+     * Если форма отправлена, то проверяем данные
+     * Если проверка успешна, то обрабатываем данные
+     * Выводим шаблон
+     *
+     * @return string
+     */
+    public function render()
+    {
         if ($this->isSubmitted()) {
             $this->process();
         }
-        $this->initCaptcha();
         if (!empty($this->polls)) {
+            $this->initCaptcha();
             $this->setPlaceholder('polls', $this->renderPolls());
             $out = $this->renderForm();
         } else {
             $out = '';
         }
+
         return $out;
     }
 
+    /**
+     * Загружает класс капчи
+     */
     public function initCaptcha()
     {
         if ($captcha = $this->getCFGDef('captcha')) {
             $wrapper = MODX_BASE_PATH . "assets/snippets/FormLister/lib/captcha/{$captcha}/wrapper.php";
             if ($this->fs->checkFile($wrapper)) {
                 include_once($wrapper);
-                $wrapper = $captcha.'Wrapper';
+                $wrapper = $captcha . 'Wrapper';
                 foreach ($this->polls as $id => &$poll) {
+                    if (!$poll['permissions']['vote']) {
+                        continue;
+                    }
                     /** @var \modxCaptchaWrapper $captcha */
-                    $captcha = new $wrapper ($this->modx, array(
-                        'id'     => 'poll'.$id,
-                        'width'  => $this->getCFGDef('captchaWidth', 100),
-                        'height' => $this->getCFGDef('captchaHeight', 60),
-                        'inline' => $this->getCFGDef('captchaInline', 1)
-                    ));
-                    $this->captcha[$id] = $captcha->getValue();
-                    $poll['captcha']=$captcha->getPlaceholder();
+                    $cfg = $this->config->loadArray($this->getCFGDef('captchaParams', array()));
+                    $cfg['id'] = 'poll' . $id;
+                    $captcha = new $wrapper ($this->modx, $cfg);
+                    $captcha->init();
+                    $poll['captcha']['captcha'] = $captcha->getPlaceholder();
+                    if (!isset($poll['captcha']['error'])) {
+                        $poll['captcha']['error'] = '';
+                    }
+                    $this->captcha['poll' . $id] = $captcha;
                 }
             }
         }
     }
 
+    /**
+     * @return bool
+     */
     public function isSubmitted()
     {
         return $this->formid && ($this->getField('formid') === $this->formid) && ($this->getField('results') === '' || $this->getField('finish') === '');
@@ -69,7 +100,8 @@ class Polls extends Core {
      * Вывод голосований
      * @return string
      */
-    public function renderPolls() {
+    public function renderPolls()
+    {
         $out = '';
         foreach ($this->polls as $id => $poll) {
             $permissions = $poll['permissions'];
@@ -80,19 +112,38 @@ class Polls extends Core {
                 $mode = 'votes';
             }
             //если голосование активно, разрешено для пользователя и не тайное, то показываем общее количество голосов и голосовавших
-            $total = !$poll['properties']['hide_results'] && $poll['poll_isactive'] && $permissions['user'] ? $this->parseChunk($this->getCFGDef('totalTpl'),$poll) : '';
+            $total = !$poll['properties']['hide_results'] && $poll['poll_isactive'] && $permissions['user'] ? $this->parseChunk($this->getCFGDef('totalTpl'),
+                $poll) : '';
             //показываем время начала и конца голосования или сообщение о завершении голосования
-            $info = $this->parseChunk($this->getCFGDef($poll['poll_isactive'] ? ($mode == 'results' ? '' : 'infoActiveTpl') : 'infoFinishedTpl'),$poll);
+            $info = $this->parseChunk($this->getCFGDef($poll['poll_isactive'] ? ($mode == 'results' ? '' : 'infoActiveTpl') : 'infoFinishedTpl'),
+                $poll);
             $plh = array(
-                $mode => $this->renderVotes($poll),
-                'info' => $info,
-                'total' => $total,
-                'status' => $this->renderPollStatus($poll),
+                $mode      => $this->renderVotes($poll),
+                'captcha'  => $this->renderCaptcha($poll),
+                'info'     => $info,
+                'total'    => $total,
+                'status'   => $this->renderPollStatus($poll),
                 'controls' => $this->renderPollControls($poll)
             );
-            $plh = array_merge($poll,$plh);
-            $out .= $this->parseChunk($this->getCFGDef($mode.'Tpl'),$plh);
+            unset($poll['votes'], $poll['captcha']);
+            $plh = array_merge($poll, $plh);
+            $out .= $this->parseChunk($this->getCFGDef($mode . 'Tpl'), $plh);
         }
+
+        return $out;
+    }
+
+    /**
+     * @param array $poll
+     * @return string
+     */
+    public function renderCaptcha($poll = array())
+    {
+        $out = '';
+        if ($poll['permissions']['user'] && $poll['permissions']['vote'] && !empty($poll['captcha'])) {
+            $out = $this->parseChunk($this->getCFGDef('captchaTpl'), $poll['captcha']);
+        }
+
         return $out;
     }
 
@@ -101,7 +152,8 @@ class Polls extends Core {
      * @param array $poll
      * @return null|string
      */
-    public function renderVotes($poll= array()){
+    public function renderVotes($poll = array())
+    {
         $out = '';
         $tpl = '';
         $votes = $poll['votes'];
@@ -111,12 +163,14 @@ class Polls extends Core {
             do {
                 //если запрет для пользователя, то показываем сообщение об этом
                 if (!$permissions['user']) {
-                    $out = $this->parseChunk($this->getCFGDef('resultsUsersOnlyTpl'),array());
+                    $out = $this->parseChunk($this->getCFGDef('resultsUsersOnlyTpl'), array());
                     break;
                 }
                 //если голосование активное, но тайное, то показываем сообщение об этом
-                if ($poll['properties']['hide_results'] && $poll['poll_isactive']) {
-                    $out = $this->parseChunk($this->getCFGDef('resultsHiddenTpl'),$poll);
+                if (($poll['properties']['hide_results'] && $poll['poll_isactive']) || $this->getCFGDef('alwaysHideResults',
+                            0)
+                ) {
+                    $out = $this->parseChunk($this->getCFGDef('resultsHiddenTpl'), $poll);
                     break;
                 }
                 //если голосовать разрешено, то определяем шаблон для вывода вариантов
@@ -130,22 +184,22 @@ class Polls extends Core {
             do {
                 //если запрет для пользователя, то показываем сообщение об этом
                 if (!$permissions['user']) {
-                    $out = $this->parseChunk($this->getCFGDef('votesUsersOnlyTpl'),array());
+                    $out = $this->parseChunk($this->getCFGDef('votesUsersOnlyTpl'), array());
                     break;
                 }
                 $tpl = $this->getCFGDef($poll['properties']['max_votes'] > 1 ? 'multipleVoteTpl' : 'singleVoteTpl');
             } while (false);
         }
         if (!$out) {
-            $sort = $this->getCFGDef('sortResults','desc');
+            $sort = $this->getCFGDef('sortResults', 'desc');
             switch ($sort) {
                 case 'asc':
-                    uasort($votes,function($a, $b) {
+                    uasort($votes, function ($a, $b) {
                         return $a['vote_value'] - $b['vote_value'];
                     });
                     break;
                 case 'desc':
-                    uasort($votes,function($a, $b) {
+                    uasort($votes, function ($a, $b) {
                         return $b['vote_value'] - $a['vote_value'];
                     });
                     break;
@@ -154,14 +208,15 @@ class Polls extends Core {
                 $thumbSnippet = $this->getCFGDef('thumbSnippet');
                 $thumbOptions = $this->getCFGDef('thumbOptions');
                 if ($thumbSnippet && $thumbOptions) {
-                    $vote['thumb'] = $this->modx->runSnippet($thumbSnippet,array(
-                        'input'=>$vote['vote_image'],
-                        'options'=>$thumbOptions
+                    $vote['thumb'] = $this->modx->runSnippet($thumbSnippet, array(
+                        'input'   => $vote['vote_image'],
+                        'options' => $thumbOptions
                     ));
                 }
-                $out .= $this->parseChunk($tpl,$vote);
+                $out .= $this->parseChunk($tpl, $vote);
             }
         }
+
         return $out;
     }
 
@@ -169,13 +224,20 @@ class Polls extends Core {
      * @param array $poll
      * @return null|string
      */
-    public function renderPollStatus($poll = array()) {
+    public function renderPollStatus($poll = array())
+    {
         $out = '';
         $permissions = $poll['permissions'];
-        if(!$permissions['vote'] && $permissions['user']) {
-            $param = $this->getCFGDef('protection') == 'cookie' || isset($_COOKIE[md5('poll'.$poll['poll_id'])]) ? $this->getCFGDef('statusCookieBlockTpl') : $this->getCFGDef('statusIpBlockTpl');
-            $out = $this->parseChunk($param,array());
+        $param = '';
+        if ($permissions['user']) {
+            if (isset($_COOKIE[md5('poll' . $poll['poll_id'])]) || $this->getFormData('status')) {
+                $param = $this->getCFGDef('statusCookieBlockTpl');
+            } elseif (!$permissions['vote']) {
+                $param = $this->getCFGDef('statusIpBlockTpl');
+            }
+            $out = $this->parseChunk($param, array());
         }
+
         return $out;
     }
 
@@ -184,7 +246,9 @@ class Polls extends Core {
      * @param array $poll
      * @return null|string
      */
-    public function renderPollControls($poll = array()) {
+    public function renderPollControls($poll = array())
+    {
+        $out = '';
         $controlsTpl = $this->getCFGDef('controlsTpl');
         $voteBtnTpl = $this->getCFGDef('voteBtnTpl');
         $resultsBtnTpl = $this->getCFGDef('resultsBtnTpl');
@@ -199,7 +263,7 @@ class Polls extends Core {
             }
             //Если можно голосовать, то показываем кнопку "Голосовать"
             if ($permissions['vote']) {
-                $plh['voteBtn'] = $this->parseChunk($voteBtnTpl,array());
+                $plh['voteBtn'] = $this->parseChunk($voteBtnTpl, array());
             }
             //Если голосование тайное, то не показываем кнопку "Результаты"
             if ($poll['properties']['hide_results']) {
@@ -208,34 +272,42 @@ class Polls extends Core {
             }
             //Если не смотрим результаты, то показываем кнопку "Результаты"
             if (!$permissions['results']) {
-                $plh['resultsBtn'] =  $this->parseChunk($resultsBtnTpl,array());
+                $plh['resultsBtn'] = $this->parseChunk($resultsBtnTpl, array());
             }
         } while (false);
-        return $this->parseChunk($controlsTpl,$plh);
+
+        if (!empty($plh['resultsBtn']) || !empty($plh['voteBtn'])) {
+            $out = $this->parseChunk($controlsTpl, $plh);
+        }
+
+        return $out;
     }
 
     /**
      * Для смешнного режима голосования нужно чтобы были заданы соответствующие шаблоны
      * @return bool
      */
-    public function isMixedResultsMode() {
+    public function isMixedResultsMode()
+    {
         return $this->getCFGDef('singleMixedTpl') || $this->getCFGDef('multipleMixedTpl');
     }
 
     /**
      * Получение информации о голосованиях
      */
-    protected function setPolls(){
+    protected function setPolls()
+    {
         $pollIds = $this->getCFGDef('pollIds');
+        if (!isset($this->modx->documentIdentifier)) $this->modx->documentIdentifier = 0;
         //Если указаны id голосований
         if ($pollIds) {
             $pollIds = $this->config->loadArray($pollIds);
-            $pollIds = implode(',',$this->poll->cleanIDs($pollIds));
+            $pollIds = implode(',', $this->poll->cleanIDs($pollIds));
             $where = "`poll_id` IN ({$pollIds})";
         } else {
-        //если указаны id ресурсов
-            $parents = (int)$this->getCFGDef('parent',$this->modx->documentIdentifier);
-            $parents = implode(',',$this->poll->cleanIDs($parents));
+            //если указаны id ресурсов
+            $parents = (int)$this->getCFGDef('parent', $this->modx->documentIdentifier);
+            $parents = implode(',', $this->poll->cleanIDs($parents));
             $where = "`poll_parent` IN ({$parents})";
         }
         $updateIds = array();
@@ -266,21 +338,31 @@ class Polls extends Core {
             //Добавляем данные о вариантах
             if (!empty($votes)) {
                 foreach ($polls as $id => &$poll) {
-                    $poll['total_votes'] = array_sum(array_column($votes[$id],'vote_value'));
+                    $total_votes = 0;
+                    //Если в голосовании нет вариантов, то пропускаем его
+                    if (empty($votes[$id]) || ($poll['properties']['users_only'] && $this->getCFGDef('hidePollsUsersOnly',
+                                0))
+                    ) {
+                        unset($polls[$id]);
+                        continue;
+                    }
+                    foreach ($votes[$id] as $vote) {
+                        $total_votes += $vote['vote_value'];
+                    }
+                    $poll['total_votes'] = $total_votes;
                     foreach ($votes[$id] as $vote) {
                         //добавляем поля, которые пригодятся при выводе вариантов
                         $vote['thumb'] = '';
                         $vote['e.vote_title'] = \APIhelpers::e($vote['vote_title']);
                         $vote['total_votes'] = $poll['total_votes'];
-                        $vote['percent'] = $poll['total_votes'] ? round(100*$vote['vote_value']/$poll['total_votes'],2) : 0;
-                         $poll['votes'][$vote['vote_id']] = $vote;
+                        $vote['percent'] = $poll['total_votes'] ? round(100 * $vote['vote_value'] / $poll['total_votes'],
+                            2) : 0;
+                        $poll['votes'][$vote['vote_id']] = $vote;
                     }
-                    //Если в голосовании нет вариантов, то пропускаем его
-                    if (empty($poll['votes']) || ($poll['properties']['users_only'] && $this->getCFGDef('hidePollsUsersOnly',0))) unset($polls[$id]);
                     $cookie = md5('poll' . $id);
                     //если голосование обнулено, то удаляем куку
                     if (!$poll['total_votes'] && isset($_COOKIE[$cookie])) {
-                        setcookie($cookie, null, time()-3600, '/');
+                        setcookie($cookie, null, time() - 3600, '/');
                     }
                 }
             }
@@ -292,7 +374,7 @@ class Polls extends Core {
         }
         //Обновляем статус завершенных голосований
         if (!empty($updateIds)) {
-            $ids = implode(',',$updateIds);
+            $ids = implode(',', $updateIds);
             $this->modx->db->query("UPDATE {$pollsTable} SET `poll_isactive`=0 WHERE `poll_id` IN ({$ids})");
         }
     }
@@ -302,51 +384,55 @@ class Polls extends Core {
      * @param array $polls
      * @return array
      */
-    protected function setVotes($polls = array()){
-        if (!$polls) return array();
-        $ids = implode(',',$this->poll->cleanIDs($polls));
-        $vTable = $this->modx->getFullTableName('sp_votes');
-        $result = $this->modx->db->query("SELECT * FROM {$vTable} WHERE `vote_poll` IN ({$ids}) ORDER BY `vote_poll` ASC, `vote_rank` DESC");
-        $votes = $this->modx->db->makeArray($result);
-        $out = array();
-        if (!empty($votes)) {
-            foreach ($votes as $vote) {
-                $out[$vote['vote_poll']][$vote['vote_id']] = $vote;
-            }
+    protected function setVotes($polls = array())
+    {
+        if (!$polls) {
+            return array();
         }
+        $ids = implode(',', $this->poll->cleanIDs($polls));
+        $vTable = $this->modx->getFullTableName('sp_votes');
+        $result = $this->modx->db->query("SELECT * FROM {$vTable} WHERE `vote_poll` IN ({$ids}) ORDER BY `vote_rank` DESC");
+        $out = array();
+        while ($vote = $this->modx->db->getRow($result)) {
+            $out[$vote['vote_poll']][$vote['vote_id']] = $vote;
+        }
+
         return $out;
     }
 
     /**
      * Получение блокировок голосований
      */
-    public function setLog() {
+    public function setLog()
+    {
         $log = array();
-        $mode = $this->getCFGDef('protection','cookie');
+        $mode = $this->getCFGDef('protection', 'cookie');
         foreach ($this->polls as $id => $poll) {
             //по умолчанию все активные голосования не заблокированы
             $log[$id] = $poll['poll_isactive'];
         }
-        if ($mode == 'cookie') {
-            foreach($this->polls as $id => $poll) {
-                //не блокировать, если нет куки или голоса обнулены
-                $log[$id] &= !isset($_COOKIE[md5('poll'.$poll['poll_id'])]) || !$poll['total_votes'];
-            }
-        } else {
+        if ($mode == 'ip') {
             $ids = array_keys($this->polls);
-            $ids = implode(',',$this->poll->cleanIDs($ids));
+            $ids = implode(',', $this->poll->cleanIDs($ids));
             //если пользователь не аноним, то смотрим, голосовал ли он раньше иначе проверяем по ip
             $condition = $this->userInfo['uid'] ? "`uid`={$this->userInfo['uid']}" : "`ip`='{$this->userInfo['ip']}' AND `uid`=0";
-            $result = $this->modx->db->query("SELECT `poll` FROM {$this->poll->makeTable('sp_log')} WHERE `poll` IN ({$ids}) AND {$condition}");
-            $result = $this->modx->db->getColumn('poll',$result);
-            foreach ($result as $id) {
-                $log[$id] = false;
+            $result = $this->modx->db->query("SELECT `poll`, COUNT(`poll`) AS `cnt` FROM {$this->poll->makeTable('sp_log')} WHERE `poll` IN ({$ids}) AND {$condition} GROUP BY `poll`");
+            while ($row = $this->modx->db->getRow($result)) {
+                if ($row['cnt'] >= $this->getCFGDef('maxVotesFromIp', 4)) {
+                    $log[$row['poll']] = false;
+                }
             }
         }
+        foreach ($this->polls as $id => $poll) {
+            //не блокировать, если нет куки или голоса обнулены
+            $log[$id] &= $mode == 'ip' || !isset($_COOKIE[md5('poll' . $poll['poll_id'])]) || !$poll['total_votes'];
+        }
         $this->log = $log;
+
     }
 
-    public function setPermissions() {
+    public function setPermissions()
+    {
         foreach ($this->polls as $id => &$poll) {
             //если голосование только для пользователей, то смотрим, авторизоан ли пользователь, иначе разрешаем
             $user = $poll['properties']['users_only'] ? (bool)$this->userInfo['uid'] : true;
@@ -362,9 +448,15 @@ class Polls extends Core {
         }
     }
 
-     protected function formatDate($value) {
-        $format = $this->getCFGDef('dateFormat','d.m.Y H:i');
-        return date($format,strtotime($value));
+    /**
+     * @param $value
+     * @return false|string
+     */
+    protected function formatDate($value)
+    {
+        $format = $this->getCFGDef('dateFormat', 'd.m.Y H:i');
+
+        return date($format, strtotime($value));
     }
 
     /**
@@ -376,23 +468,35 @@ class Polls extends Core {
         $vote = $this->getField('vote');
         $finish = $this->getField('finish');
         //выход, если не нажата кнопка "Голосовать" или нет id голосования или нет id варианта
-        if ($finish !== '' || !$poll || !$vote) return;
+        if ($finish !== '' || !$poll || !$vote) {
+            return;
+        }
         $votes = is_array($vote) ? $vote : array($vote);
         $sn = session_name();
         $permissions = $this->polls[$poll]['permissions'];
         //проверяем разрешено ли голосовать
         $flag = $permissions['vote'] &&
-                $permissions['user'] &&
-                //нет ли попытки проголосовать не с сайта
-                isset($_COOKIE[$sn]) &&
-                //есть ли для голосования указанные варианты
-                count(array_intersect_key(array_flip($votes), $this->polls[$poll]['votes'])) === count($votes);
+            $permissions['user'] &&
+            //нет ли попытки проголосовать не с сайта
+            isset($_COOKIE[$sn]) &&
+            //есть ли для голосования указанные варианты
+            count(array_intersect_key(array_flip($votes), $this->polls[$poll]['votes'])) === count($votes);
         //если нужно, то проверяем капчу
-        if (!empty($this->captcha)) $flag &= ($this->getField($this->getCFGDef('captchaField','vericode')) == $this->captcha[$poll]);
+        if (!empty($this->getCFGDef('captcha')) && !empty($this->captcha) && $flag) {
+            $captcha = $this->captcha['poll' . $poll];
+            $result = $captcha::validate($this, $this->getField($this->getCFGDef('captchaField', 'vericode')),
+                $captcha);
+            if ($result !== true) {
+                $this->polls[$poll]['captcha']['error'] = $this->parseChunk($this->getCFGDef('errorTpl',
+                    '@CODE:<span class="help-block">[+message+]</span>'),
+                    array('message' => $result));
+            }
+            $flag &= $result === true ? true : false;
+        }
         //дополнительно проверяем ограничение по количеству вариантов для голосования
-        if($votes && $flag && (count($votes) <= $this->polls[$poll]['properties']['max_votes'])) {
+        if ($votes && $flag && (count($votes) <= $this->polls[$poll]['properties']['max_votes'])) {
             //если все в порядке, то засчитываем голоса и получаем обновленную информацию о вариантах для голосования
-            $votes = $this->poll->edit($poll)->vote($votes)->getVotes();
+            $votes = $this->poll->edit($poll)->set('phone', $this->getField('logphone'))->vote($votes)->getVotes();
             //обновляем данные о голосованиях
             //ставим для голосования блокировку
             $this->log[$poll] = false;

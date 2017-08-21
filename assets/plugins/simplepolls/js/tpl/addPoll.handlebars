@@ -1,30 +1,33 @@
 <form id="createPollForm" style="padding:10px;">
     <input type="hidden" name="poll_parent" value="{{data.poll_parent}}">
-    <p>Название голосования</p>
-    <input type="text" id="poll_title" name="poll_title" style="width:315px;" value="{{data.poll_title}}">
-    <br>
-    <table>
+    <input type="hidden" name="poll_id" value="{{data.poll_id}}">
+    <div class="form-group">
+        <label for="poll_title">Название голосования</label>
+        <input type="text" id="poll_title" name="poll_title" style="width:315px;" value="{{data.poll_title}}">
+    </div>
+    <table class="form-group">
         <tr>
             <td>
-                <p>Начало голосования</p>
+                <label for="poll_begin">Начало голосования</label>
                 <input type="text" id="poll_begin" name="poll_begin" style="width:158px;" value="{{data.poll_begin}}">
             </td>
             <td>
-                <p>Конец голосования</p>
+                <label for="poll_end">Конец голосования</label>
                 <input type="text" id="poll_end" name="poll_end" style="width:158px" value="{{data.poll_end}}">
             </td>
         </tr>
     </table>
-    <p>Выбор вариантов</p>
+    <div class="form-group">
+    <label for="max_votes">Выбор вариантов</label>
     <input type="text" name="max_votes" id="max_votes" value="{{data.poll_properties.max_votes}}" style="width:50px">
-    <br>
-    <p>Активно: 
+    </div>
+    <label for="poll_isactive" class="form-group">Активно:
         <input type="checkbox" name="poll_isactive" value="1"{{#ifCond data.poll_isactive "1"}} checked{{/ifCond}}>
-    </p>
-    <p>Только для пользователей: 
-        <input type="checkbox" name="users_only" value="1"{{#ifCond data.poll_properties.users_only "1"}} checked{{/ifCond}}>
-    </p>
-    <p>Тайное голосование: 
-        <input type="checkbox" name="hide_results" value="1"{{#ifCond data.poll_properties.hide_results "1"}} checked{{/ifCond}}>
-    </p>
+    </label>
+    <label for="users_only" class="form-group">Только для пользователей:
+        <input type="checkbox" name="users_only" value="1"{{#ifCond data.poll_properties.users_only 1}} checked{{/ifCond}}>
+    </label>
+    <label for="hide_results" class="form-group">Тайное голосование:
+        <input type="checkbox" name="hide_results" value="1"{{#ifCond data.poll_properties.hide_results 1}} checked{{/ifCond}}>
+    </label>
 </form>

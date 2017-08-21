@@ -2,11 +2,7 @@
   "styles": {
     "EasyUICss" : {
       "version":"1.4.1",
-      "src":"assets/js/easy-ui/themes/bootstrap/easyui.css"
-    },
-    "EasyUIIconsCss": {
-      "version":"1.4.1",
-      "src":"assets/js/easy-ui/themes/icon.css"
+      "src":"assets/js/easy-ui/themes/modx/easyui.css"
     },
     "SimplePollsCss" : {
       "version":"1.0.0",

@@ -1,26 +1,23 @@
-#SimplePolls .pagination select, #SimplePolls .pagination input {
-    width:auto;
-    height:auto;
+#SimplePolls .btn-green {
+    color:green;
 }
-#SimplePolls .pagination td {
+#SimplePolls .btn-red {
+    color:red;
+}
+#SimplePolls td[field="select"],
+#SimplePolls td[field="poll_title"],
+#SimplePolls td[field="poll_begin"],
+#SimplePolls td[field="poll_end"],
+#SimplePolls td[field="poll_isactive"],
+#SimplePolls td[field="stat"],
+#SimplePolls td[field="poll_rank"],
+#SimplePolls td[field="_expander"] {
     vertical-align: middle;
 }
-#SimplePolls .datagrid-view td {
-    padding:0 5px;
-    vertical-align: middle;
+#SimplePolls td[field="vote_image"] {
+    padding:4px 0;
 }
-#SimplePolls .datagrid-header-inner td {
-    vertical-align: middle;
-}
-#SimplePolls .datagrid-header-check, .datagrid-cell-check {
-    height:auto;
-}
-#SimplePolls .datagrid-row-selected {
-    color: rgb(255, 255, 255);
-    background: rgb(0, 129, 194);
-}
-#SimplePolls .datagrid-row-selected input {
-    color: rgb(255, 255, 255);
-    background: transparent;
-    border:0;
+#createPollForm .form-group {
+    display:block;
+    margin-bottom:15px;
 }

@@ -1,17 +1,28 @@
 <?php namespace SimplePolls;
-include_once (MODX_BASE_PATH . 'assets/lib/MODxAPI/autoTable.abstract.php');
+use \SimpleTab\dataTable;
 
-class Vote extends \autoTable {
+include_once(MODX_BASE_PATH . 'assets/lib/SimpleTab/table.abstract.php');
+
+/**
+ * Class Vote
+ * @package SimplePolls
+ */
+class Vote extends dataTable
+{
     protected $table = 'sp_votes';
     protected $pkName = 'vote_id';
+    protected $indexName = 'vote_rank';
+    protected $rfName = 'vote_poll';
     public $default_field = array(
-        'vote_id' => 0,
-        'vote_title' => '', //название варианта,
-        'vote_image' => '', //картинка
-        'vote_poll' => 0, //голосование-родитель
-        'vote_value' => 0, //число голосов
-        'vote_rank' => 0, //позиция в списке
+        'vote_id'      => 0,
+        'vote_title'   => '', //название варианта,
+        'vote_image'   => '', //картинка
+        'vote_poll'    => 0, //голосование-родитель
+        'vote_value'   => 0, //число голосов
+        'vote_rank'    => 0, //позиция в списке
+        'vote_blocked' => 0
     );
+    protected $thumbsCache = 'assets/.spThumbs/';
 
     /**
      * Удаление вариантов для заданных голосований
@@ -19,15 +30,23 @@ class Vote extends \autoTable {
      * @return $this
      * @throws \Exception
      */
-    public function deletePoll($ids) {
+    public function deletePoll($ids)
+    {
         $_ids = $this->cleanIDs($ids, ',');
         if (!empty($_ids)) {
-            $id = implode(',',$_ids);
-            if(!empty($id)){
+            $id = implode(',', $_ids);
+            if (!empty($id)) {
+                $q = $this->query("SELECT `vote_image` FROM {$this->makeTable($this->table)} WHERE `vote_poll` IN ({$id})");
+                while ($row = $this->modx->db->getRow($q)) {
+                    $this->deleteThumb($this->thumbsCache . $row['vote_image']);
+                }
                 $this->query("DELETE from {$this->makeTable($this->table)} where `vote_poll` IN ({$id})");
             }
-        } else throw new \Exception('Invalid IDs list for delete: <pre>' . print_r($ids, 1) . '</pre>');
+        } else {
+            throw new \Exception('Invalid IDs list for delete: <pre>' . print_r($ids, 1) . '</pre>');
+        }
         $this->query("ALTER TABLE {$this->makeTable($this->table)} AUTO_INCREMENT = 1");
+
         return $this;
     }
 
@@ -37,35 +56,54 @@ class Vote extends \autoTable {
      * @return $this
      * @throws \Exception
      */
-    public function resetPoll($ids) {
+    public function resetPoll($ids)
+    {
         $_ids = $this->cleanIDs($ids, ',');
         if (!empty($_ids)) {
-            $id = implode(',',$_ids);
-            if(!empty($id)){
-                $this->query("UPDATE {$this->makeTable($this->table)} SET `vote_value`=0 WHERE`vote_poll` IN ({$id})");
+            $id = implode(',', $_ids);
+            if (!empty($id)) {
+                $this->query("UPDATE {$this->makeTable($this->table)} SET `vote_value`=0 WHERE `vote_poll` IN ({$id})");
             }
-        } else throw new \Exception('Invalid IDs list for reset: <pre>' . print_r($ids, 1) . '</pre>');
+        } else {
+            throw new \Exception('Invalid IDs list for reset: <pre>' . print_r($ids, 1) . '</pre>');
+        }
+
         return $this;
     }
 
+    /**
+     * @param null $fire_events
+     * @param bool $clearCache
+     * @return bool|null
+     */
     public function save($fire_events = null, $clearCache = false)
     {
         if ($this->newDoc) {
             $q = $this->query("SELECT count(`vote_id`) FROM {$this->makeTable($this->table)} WHERE `vote_poll`={$this->get('vote_poll')}");
             $this->field['vote_rank'] = $this->modx->db->getValue($q);
         }
+
         return parent::save();
     }
 
-    public function vote($ids = array()) {
+    /**
+     * @param array $ids
+     */
+    public function vote($ids = array())
+    {
         $_ids = $this->cleanIDs($ids, ',');
-        $id = implode(',',$_ids);
-        if(!empty($id)){
-            $this->query("UPDATE {$this->makeTable($this->table)} SET `vote_value`=(`vote_value` + 1) WHERE `vote_id` IN ({$id})");
+        $id = implode(',', $_ids);
+        if (!empty($id)) {
+            $this->query("UPDATE {$this->makeTable($this->table)} SET `vote_value`=(`vote_value` + 1) WHERE `vote_id` IN ({$id}) AND `vote_blocked`=0");
         }
     }
 
-    public function correct($id, $num = 0) {
+    /**
+     * @param $id
+     * @param int $num
+     */
+    public function correct($id, $num = 0)
+    {
         if (is_integer($num) && $num > 0 && $id) {
             $this->query("UPDATE {$this->makeTable($this->table)} SET `vote_value`=(`vote_value` + {$num}) WHERE `vote_id` IN ({$id}) AND (`vote_value` + {$num}) > 0");
             $this->close();
@@ -75,21 +113,21 @@ class Vote extends \autoTable {
         }
     }
 
-    public function makeThumb($folder,$url,$options) {
-        if (empty($url)) return false;
-        include_once(MODX_BASE_PATH.'assets/lib/Helpers/FS.php');
-        include_once(MODX_BASE_PATH.'assets/lib/Helpers/PHPThumb.php');
-        $fs = \Helpers\FS::getInstance();
-        $thumb = new \Helpers\PHPThumb();
-        $inputFile = MODX_BASE_PATH . $fs->relativePath($url);
-        $outputFile = MODX_BASE_PATH. $fs->relativePath($folder). '/' . $fs->relativePath($url);
-        $dir = $fs->takeFileDir($outputFile);
-        $fs->makeDir($dir);
-        if ($thumb->create($inputFile,$outputFile,$options)) {
-            return true;
-        } else {
-            $this->modx->logEvent(0, 3, $thumb->debugMessages,  __NAMESPACE__);
-            return false;
+    /**
+     * @param $ids
+     * @param null $fire_events
+     * @return $this
+     */
+    public function delete($ids, $fire_events = false)
+    {
+        $_ids = $this->cleanIDs($ids, ',');
+        $ids = implode(',', $_ids);
+        $q = $this->query("SELECT `vote_image` FROM {$this->makeTable($this->table)} WHERE `vote_id` IN ({$ids})");
+        $thumbs = $this->modx->db->getColumn('vote_image',$q);
+        foreach ($thumbs as $thumb) {
+            $this->deleteThumb($this->thumbsCache . $thumb);
         }
+
+        return parent::delete($ids, $fire_events); // TODO: Change the autogenerated stub
     }
 }

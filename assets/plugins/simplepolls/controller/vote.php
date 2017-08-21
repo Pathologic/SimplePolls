@@ -2,6 +2,10 @@
 include_once (MODX_BASE_PATH . 'assets/plugins/simplepolls/model/vote.php');
 include_once(MODX_BASE_PATH.'assets/lib/APIHelpers.class.php');
 
+/**
+ * Class VoteController
+ * @package SimplePolls
+ */
 class VoteController {
     protected $modx = null;
     protected $vote = null;
@@ -17,11 +21,18 @@ class VoteController {
         'orderBy'       =>  "vote_rank DESC",
     );
 
+    /**
+     * VoteController constructor.
+     * @param \DocumentParser $modx
+     */
     public function __construct (\DocumentParser $modx) {
         $this->modx = $modx;
         $this->vote = new Vote($modx);
     }
 
+    /**
+     * @return array
+     */
     public function create() {
         $pollId =  isset($_REQUEST['vote_poll']) ? (int)$_REQUEST['vote_poll'] : 0;
         if (!$pollId) return array('success'=>false);
@@ -34,17 +45,24 @@ class VoteController {
         if ($out) return $this->vote->toArray();
     }
 
+    /**
+     * @return array
+     */
     public function edit() {
         $id =  isset($_REQUEST['vote_id']) ? (int)$_REQUEST['vote_id'] : 0;
         if (!$id) return array('success'=>false);
         $fields = array(
             'vote_title' => $_REQUEST['vote_title'],
             'vote_image' => $_REQUEST['vote_image'],
+            'vote_blocked' => (int)$_REQUEST['vote_blocked'] > 0 ? 1 : 0
         );
         $out = $this->vote->edit($id)->fromArray($fields)->save();
         if ($out) return $this->vote->toArray();
     }
 
+    /**
+     * @return array
+     */
     public function correct() {
         $out = array();
         $id = isset($_REQUEST['ids']) && is_scalar($_REQUEST['ids']) ? (int)$_REQUEST['ids'] : 0;
@@ -54,6 +72,9 @@ class VoteController {
         return $out;
     }
 
+    /**
+     * @return array
+     */
     public function remove()
     {
         $out = array();
@@ -67,12 +88,40 @@ class VoteController {
         return $out;
     }
 
+    /**
+     * @return string
+     */
     public function listing() {
         $pollId =  isset($_REQUEST['vote_poll']) ? (int)$_REQUEST['vote_poll'] : 0;
         $this->dlParams['addWhereList'] = "`vote_poll`={$pollId}";
         return $this->modx->runSnippet("DocLister", $this->dlParams);
     }
 
+    /**
+     * @return array
+     */
+    public function reorder()
+    {
+        $out = array();
+        $pollId =  isset($_REQUEST['vote_poll']) ? (int)$_REQUEST['vote_poll'] : 0;
+        $source = $_POST['source'];
+        $target = $_POST['target'];
+        $point = $_POST['point'];
+        $orderDir = $_POST['orderDir'];
+        $rows = $this->vote->reorder($source, $target, $point, $pollId, $orderDir);
+
+        if ($rows) {
+            $out['success'] = true;
+        } else {
+            $out['success'] = false;
+        }
+
+        return $out;
+    }
+
+    /**
+     *
+     */
     public function thumb()
     {
         include_once(MODX_BASE_PATH.'assets/lib/Helpers/FS.php');

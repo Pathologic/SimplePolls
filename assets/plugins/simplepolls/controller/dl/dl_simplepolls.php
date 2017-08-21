@@ -1,36 +1,25 @@
 <?php
 include_once (MODX_BASE_PATH.'assets/snippets/DocLister/core/controller/onetable.php');
+
+/**
+ * Class dl_simplepollsDocLister
+ */
 class dl_simplepollsDocLister extends onetableDocLister {
-    //выборка голосований с подсчетом голосов
-    protected function getDocList()
+    /**
+     * Генерация имени таблицы с префиксом и алиасом
+     *
+     * @param string $name имя таблицы
+     * @param string $alias желаемый алиас таблицы
+     * @return string имя таблицы с префиксом и алиасом
+     */
+    public function getTable($name, $alias = '')
     {
-        $out = array();
-        $sanitarInIDs = $this->sanitarIn($this->IDs);
-        if ($sanitarInIDs != "''" || $this->getCFGDef('ignoreEmpty', '0')) {
-            $where = $this->getCFGDef('addWhereList', '');
-            if ($where != '') {
-                $where = array($where);
-            }
-            if ($sanitarInIDs != "''") {
-                $where[] = "`{$this->getPK()}` IN ({$sanitarInIDs})";
-            }
-
-            if (!empty($where)) {
-                $where = "WHERE " . implode(" AND ", $where);
-            }
-            $limit = $this->LimitSQL($this->getCFGDef('queryLimit', 0));
-            $fields = "*, IFNULL(SUM(`vote_value`),0) AS `poll_votes`";
-            $vTable = $this->modx->getFullTableName('sp_votes');
-            $join = "LEFT JOIN {$vTable} ON `poll_id`=`vote_poll`";
-            $group = "GROUP BY `poll_id`";
-            $rs = $this->dbQuery("SELECT {$fields} FROM {$this->table} {$join} {$where} {$group} {$this->SortOrderSQL($this->getPK())} {$limit}");
-
-            $rows = $this->modx->db->makeArray($rs);
-            $out = array();
-            foreach ($rows as $item) {
-                $out[$item[$this->getPK()]] = $item;
-            }
+        $table = parent::getTable($name, $alias);
+        if ($name == 'sp_polls') {
+            $join = " LEFT JOIN (SELECT `vote_poll`, SUM(`vote_value`) AS `poll_votes` FROM {$this->getTable('sp_votes')} GROUP BY `vote_poll`) `v` ON `v`.`vote_poll` = `c`.`poll_id`";
+            $table .= $join;
         }
-        return $out;
+
+        return $table;
     }
 }
