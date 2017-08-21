@@ -107,7 +107,7 @@ class Polls extends Core
             $permissions = $poll['permissions'];
             //если разрешено показывать результаты, то используем шаблон mixedTpl или resultsTpl
             if ($permissions['results']) {
-                $mode = $this->isMixedResultsMode() && $permissions['vote'] ? 'mixed' : 'results';
+                $mode = $this->isMixedResultsMode() && $permissions['vote'] && $poll['poll_isactive'] ? 'mixed' : 'results';
             } else {
                 $mode = 'votes';
             }
@@ -140,6 +140,9 @@ class Polls extends Core
     public function renderCaptcha($poll = array())
     {
         $out = '';
+        if ($poll['permissions']['results'] && $this->isMixedResultsMode() && !$poll['poll_isactive']) {
+            return $out;
+        };
         if ($poll['permissions']['user'] && $poll['permissions']['vote'] && !empty($poll['captcha'])) {
             $out = $this->parseChunk($this->getCFGDef('captchaTpl'), $poll['captcha']);
         }
@@ -167,14 +170,14 @@ class Polls extends Core
                     break;
                 }
                 //если голосование активное, но тайное, то показываем сообщение об этом
-                if (($poll['properties']['hide_results'] && $poll['poll_isactive']) || $this->getCFGDef('alwaysHideResults',
+                if (($poll['properties']['hide_results'] && $poll['poll_isactive'] && !$this->isMixedResultsMode()) || $this->getCFGDef('alwaysHideResults',
                             0)
                 ) {
                     $out = $this->parseChunk($this->getCFGDef('resultsHiddenTpl'), $poll);
                     break;
                 }
                 //если голосовать разрешено, то определяем шаблон для вывода вариантов
-                if ($permissions['vote'] && $this->isMixedResultsMode()) {
+                if ($permissions['vote'] && $this->isMixedResultsMode() && $poll['poll_isactive']) {
                     $tpl = $this->getCFGDef($poll['properties']['max_votes'] > 1 ? 'multipleMixedTpl' : 'singleMixedTpl');
                 } else {
                     $tpl = $this->getCFGDef('resultsVoteTpl');
@@ -261,6 +264,10 @@ class Polls extends Core
                 $plh['resultsBtn'] = '';
                 break;
             }
+            if ($poll['permissions']['results'] && $this->isMixedResultsMode() && !$poll['poll_isactive']) {
+                $plh['voteBtn'] = '';
+                break;
+            };
             //Если можно голосовать, то показываем кнопку "Голосовать"
             if ($permissions['vote']) {
                 $plh['voteBtn'] = $this->parseChunk($voteBtnTpl, array());
@@ -431,6 +438,9 @@ class Polls extends Core
 
     }
 
+    /**
+     *
+     */
     public function setPermissions()
     {
         foreach ($this->polls as $id => &$poll) {
