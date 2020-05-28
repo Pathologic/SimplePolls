@@ -43,14 +43,14 @@ class Plugin extends \SimpleTab\Plugin {
         $sql = <<< OUT
 CREATE TABLE IF NOT EXISTS `{$prefix}sp_polls` (
 `poll_id` int(10) NOT NULL auto_increment,
-`poll_title` varchar(255) NOT NULL default '',
-`poll_isactive` int(1) NOT NULL default '1',
-`poll_properties` varchar(255) NOT NULL default '',
-`poll_parent` int(10) NOT NULL default 0,
-`poll_rank` int(10) NOT NULL default 0,
+`poll_title` varchar(255) NOT NULL,
+`poll_isactive` int(1) NOT NULL default 1,
+`poll_properties` varchar(255) NOT NULL,
+`poll_parent` int(10) NOT NULL,
+`poll_rank` int(10) NOT NULL,
 `poll_begin` datetime NOT NULL,
 `poll_end` datetime NOT NULL,
-`poll_voters` int(10) NOT NULL default 0,
+`poll_voters` int(10) NOT NULL,
 PRIMARY KEY  (`poll_id`),
 KEY `poll_isactive` (`poll_isactive`),
 KEY `poll_parent` (`poll_parent`),
@@ -58,41 +58,49 @@ KEY `poll_rank` (`poll_rank`),
 KEY `poll_begin` (`poll_begin`),
 KEY `poll_end` (`poll_end`),
 KEY `poll_voters` (`poll_voters`)
-) ENGINE=MyISAM COMMENT='Polls table for SimplePolls plugin.';
+) ENGINE=InnoDB COMMENT='Polls table for SimplePolls plugin.';
 OUT;
         $flag = $this->modx->db->query($sql);
         $sql = <<< OUT
 CREATE TABLE IF NOT EXISTS `{$prefix}sp_votes` (
 `vote_id` int(10) NOT NULL auto_increment,
-`vote_image` varchar(255) NOT NULL default '',
-`vote_title` varchar(255) NOT NULL default '',
-`vote_poll` int(10) NOT NULL default 0,
-`vote_rank` int(10) NOT NULL default 0,
-`vote_value` int(10) default 0,
-`vote_blocked` int(1) default 0,
+`vote_image` varchar(255) NOT NULL,
+`vote_title` varchar(255) NOT NULL,
+`vote_poll` int(10) NOT NULL,
+`vote_rank` int(10) NOT NULL,
+`vote_value` int(10) NOT NULL,
+`vote_blocked` int(1) NOT NULL,
 PRIMARY KEY  (`vote_id`),
+CONSTRAINT `sp_votes_ibfk_1` 
+FOREIGN KEY (`vote_poll`) 
+REFERENCES `{$prefix}sp_polls` (`poll_id`) 
+ON DELETE CASCADE,
 KEY `vote_rank` (`vote_rank`),
 KEY `vote_poll` (`vote_poll`),
 KEY `vote_value` (`vote_value`)
-) ENGINE=MyISAM COMMENT='Votes table for SimplePolls plugin.';
+) ENGINE=InnoDB COMMENT='Votes table for SimplePolls plugin.';
 OUT;
         $flag &= $this->modx->db->query($sql);
         $sql = <<< OUT
 CREATE TABLE IF NOT EXISTS `{$prefix}sp_log` (
 `id` int(10) NOT NULL auto_increment,
-`poll` int(10) NOT NULL default 0,
-`ip` varchar(255) NOT NULL default '',
-`uid` int(10) NOT NULL default 0,
+`poll` int(10) NOT NULL,
+`ip` varchar(255) NOT NULL,
+`uid` int(10) NOT NULL,
 `votedon` datetime NOT NULL,
-`vote` TEXT NOT NULL default '',
-`phone` varchar(255) NOT NULL default '',
+`vote` TEXT NOT NULL,
+`phone` varchar(255) NOT NULL,
 PRIMARY KEY  (`id`),
+CONSTRAINT `sp_log_ibfk_1` 
+FOREIGN KEY (`poll`) 
+REFERENCES `{$prefix}sp_polls` (`poll_id`) 
+ON DELETE CASCADE,
 KEY `poll` (`poll`),
 KEY `ip` (`ip`),
 KEY `uid` (`uid`),
 KEY `votedon` (`votedon`),
 KEY `phone` (`phone`)
-) ENGINE=MyISAM COMMENT='Log table for SimplePolls plugin.';
+) ENGINE=InnoDB COMMENT='Log table for SimplePolls plugin.';
 OUT;
         $flag &= $this->modx->db->query($sql);
         return $flag;

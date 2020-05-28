@@ -15,7 +15,7 @@
   "resultsVoteTpl":"@CODE:<p>[+vote_title+]: [+vote_value+]/[+total_votes+] ([+percent+]%)</p>",
   "resultsUsersOnlyTpl":"@CODE:<p>Только зарегистрированные пользователи могут видеть результаты голосования.</p>",
   "resultsHiddenTpl":"@CODE:<p>Результаты голосования будут доступны с [+end+].</p>",
-  "infoActiveTpl":"@CODE:<p>В голосовании можно участвовать с [+begin+] по [+end+].</p>",
+  "infoActiveTpl":"@CODE:<p>В голосовании можно участвовать с [+begin+] по [+end+]. Максимальное число голосов от участника - [+properties.max_votes+].</p>",
   "infoFinishedTpl":"@CODE:<p>Голосование завершено.</p>",
   "votesUsersOnlyTpl":"@CODE:<p>Только зарегистрированные пользователи могут принять участие в голосовании.</p>",
   "statusCookieBlockTpl":"@CODE:<p>Cпасибо за участие в голосовании!</p>",

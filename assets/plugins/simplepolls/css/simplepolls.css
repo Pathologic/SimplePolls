@@ -14,9 +14,6 @@
 #SimplePolls td[field="_expander"] {
     vertical-align: middle;
 }
-#SimplePolls td[field="vote_image"] {
-    padding:4px 0;
-}
 #createPollForm .form-group {
     display:block;
     margin-bottom:15px;

@@ -1,4 +1,5 @@
 <?php namespace SimplePolls;
+
 use \SimpleTab\dataTable;
 
 include_once(MODX_BASE_PATH . 'assets/lib/SimpleTab/table.abstract.php');
@@ -13,15 +14,14 @@ class Vote extends dataTable
     protected $pkName = 'vote_id';
     protected $indexName = 'vote_rank';
     protected $rfName = 'vote_poll';
-    public $default_field = array(
-        'vote_id'      => 0,
+    public $default_field = [
         'vote_title'   => '', //название варианта,
         'vote_image'   => '', //картинка
         'vote_poll'    => 0, //голосование-родитель
         'vote_value'   => 0, //число голосов
         'vote_rank'    => 0, //позиция в списке
         'vote_blocked' => 0
-    );
+    ];
     protected $thumbsCache = 'assets/.spThumbs/';
 
     /**
@@ -40,12 +40,10 @@ class Vote extends dataTable
                 while ($row = $this->modx->db->getRow($q)) {
                     $this->deleteThumb($this->thumbsCache . $row['vote_image']);
                 }
-                $this->query("DELETE from {$this->makeTable($this->table)} where `vote_poll` IN ({$id})");
             }
         } else {
             throw new \Exception('Invalid IDs list for delete: <pre>' . print_r($ids, 1) . '</pre>');
         }
-        $this->query("ALTER TABLE {$this->makeTable($this->table)} AUTO_INCREMENT = 1");
 
         return $this;
     }
@@ -72,8 +70,8 @@ class Vote extends dataTable
     }
 
     /**
-     * @param null $fire_events
-     * @param bool $clearCache
+     * @param  null  $fire_events
+     * @param  bool  $clearCache
      * @return bool|null
      */
     public function save($fire_events = null, $clearCache = false)
@@ -87,9 +85,9 @@ class Vote extends dataTable
     }
 
     /**
-     * @param array $ids
+     * @param  array  $ids
      */
-    public function vote($ids = array())
+    public function vote($ids = [])
     {
         $_ids = $this->cleanIDs($ids, ',');
         $id = implode(',', $_ids);
@@ -100,7 +98,7 @@ class Vote extends dataTable
 
     /**
      * @param $id
-     * @param int $num
+     * @param  int  $num
      */
     public function correct($id, $num = 0)
     {
@@ -115,7 +113,7 @@ class Vote extends dataTable
 
     /**
      * @param $ids
-     * @param null $fire_events
+     * @param  null  $fire_events
      * @return $this
      */
     public function delete($ids, $fire_events = false)
@@ -123,7 +121,7 @@ class Vote extends dataTable
         $_ids = $this->cleanIDs($ids, ',');
         $ids = implode(',', $_ids);
         $q = $this->query("SELECT `vote_image` FROM {$this->makeTable($this->table)} WHERE `vote_id` IN ({$ids})");
-        $thumbs = $this->modx->db->getColumn('vote_image',$q);
+        $thumbs = $this->modx->db->getColumn('vote_image', $q);
         foreach ($thumbs as $thumb) {
             $this->deleteThumb($this->thumbsCache . $thumb);
         }

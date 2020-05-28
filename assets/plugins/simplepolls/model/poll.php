@@ -13,28 +13,27 @@ class Poll extends \autoTable
     protected $table = 'sp_polls';
     protected $pkName = 'poll_id';
     protected $vote = null;
-    public $default_field = array(
-        'poll_id'         => 0,
+    public $default_field = [
         'poll_title'      => '', //название голосования
         'poll_parent'     => 0, //ресурс-родитель
         'poll_isactive'   => 0, //голосоание активно
         'poll_begin'      => 0, //дата начала
         'poll_end'        => 0, //дата завершения
         'poll_rank'       => 0, //позиция в списке,
-        'poll_properties' => array(
+        'poll_properties' => [
             'max_votes'    => 1,
             'users_only'   => 0,
             'hide_results' => 0
-        ),
+        ],
         'poll_voters'     => 0
-    );
-    protected $jsonFields = array(
+    ];
+    protected $jsonFields = [
         'poll_properties' //настройки голосования
-    );
+    ];
 
     /**
      * Poll constructor.
-     * @param \DocumentParser $modx
+     * @param  \DocumentParser  $modx
      */
     public function __construct($modx)
     {
@@ -45,7 +44,7 @@ class Poll extends \autoTable
 
     /**
      * @param $ids
-     * @param null $fire_events
+     * @param  null  $fire_events
      * @return $this
      * @throws Exception
      */
@@ -53,9 +52,7 @@ class Poll extends \autoTable
     {
         //при удалении голосований удаляем варианты и записи в логе
         $this->vote->deletePoll($ids);
-        $this->log->deletePoll($ids);
         parent::delete($ids, $fire_events);
-        $this->query("ALTER TABLE {$this->makeTable($this->table)} AUTO_INCREMENT = 1");
 
         return $this;
     }
@@ -76,7 +73,7 @@ class Poll extends \autoTable
 
     /**
      * Голосование за список вариантов
-     * @param null $ids
+     * @param  null  $ids
      * @return $this|bool
      */
     public function vote($ids = null)
@@ -89,13 +86,13 @@ class Poll extends \autoTable
         $this->vote->vote($ids);
         $this->query("UPDATE {$this->makeTable($this->table)} SET `poll_voters`=(`poll_voters` + 1) WHERE `poll_id` = {$this->getID()}");
         //записываем в лог запись о голосовании
-        $this->log->create(array(
+        $this->log->create([
             'poll'  => $this->getID(),
             'ip'    => $this->getUserIP(),
-            'uid'   => $this->modx->getLoginUserID('web'),
+            'uid'   => (int) $this->modx->getLoginUserID('web'),
             'vote'  => json_encode($ids),
             'phone' => $this->get('phone')
-        ))->save();
+        ])->save();
         //устанавливаем куку
         $cookie = md5('poll' . $this->getID());
         setcookie($cookie, rand(), strtotime($this->get('poll_end')), '/');
@@ -110,7 +107,7 @@ class Poll extends \autoTable
     public function getVotes()
     {
         if (!$this->newDoc) {
-            $out = $votes = array();
+            $out = $votes = [];
             $result = $this->query("SELECT * FROM {$this->modx->getFullTableName('sp_votes')} WHERE `vote_poll`={$this->getID()} ORDER BY `vote_rank` DESC");
             while ($row = $this->modx->db->getRow($result)) {
                 $votes[] = $row;
@@ -125,13 +122,13 @@ class Poll extends \autoTable
                 $out[$vote['vote_id']] = $vote;
             }
 
-            return array('total' => $total, 'votes' => $out);
+            return ['total' => $total, 'votes' => $out];
         }
     }
 
     /**
-     * @param null $fire_events
-     * @param bool $clearCache
+     * @param  null  $fire_events
+     * @param  bool  $clearCache
      * @return bool|null
      */
     public function save($fire_events = null, $clearCache = false)
