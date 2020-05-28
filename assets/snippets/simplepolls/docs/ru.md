@@ -11,7 +11,26 @@
 
 Для каждого голосования можно настроить время начала и завершения, максимальное количество вариантов для голосования одним участником, доступ для зарегистрированных пользователей, показ результатов до завершения. При голосовании также ведется подсчет участников.
 
-Для работы компонента требуется наличие установленных компонентов DocLister и FormLister. Версия PHP - от 5.6.
+Для работы компонента требуется наличие установленных компонентов DocLister и FormLister. Версия PHP - от 7.2.
+
+### Обновление с версий ниже 1.3
+Изменить тип таблиц на InnoDB:
+```
+ALTER TABLE `modx_sp_polls` ENGINE = InnoDB;
+ALTER TABLE `modx_sp_votes` ENGINE = InnoDB;
+ALTER TABLE `modx_sp_log` ENGINE = InnoDB;
+```
+
+Добавить ключи:
+```
+ALTER TABLE `modx_sp_votes` ADD CONSTRAINT `sp_votes_ibfk_1`
+FOREIGN KEY (`vote_poll`) REFERENCES `modx_sp_polls` (`poll_id`)
+ON DELETE CASCADE;
+
+ALTER TABLE `modx_sp_log` ADD CONSTRAINT `sp_log_ibfk_1`
+FOREIGN KEY (`poll`) REFERENCES `modx_sp_polls` (`poll_id`)
+ON DELETE CASCADE;
+```
 
 ## Режимы работы
 Для каждого голосования выбирается режим работы:
