@@ -60,7 +60,7 @@ KEY `poll_end` (`poll_end`),
 KEY `poll_voters` (`poll_voters`)
 ) ENGINE=InnoDB COMMENT='Polls table for SimplePolls plugin.';
 OUT;
-        $flag = $this->modx->db->query($sql);
+        $this->modx->db->query($sql);
         $sql = <<< OUT
 CREATE TABLE IF NOT EXISTS `{$prefix}sp_votes` (
 `vote_id` int(10) NOT NULL auto_increment,
@@ -80,7 +80,7 @@ KEY `vote_poll` (`vote_poll`),
 KEY `vote_value` (`vote_value`)
 ) ENGINE=InnoDB COMMENT='Votes table for SimplePolls plugin.';
 OUT;
-        $flag &= $this->modx->db->query($sql);
+        $this->modx->db->query($sql);
         $sql = <<< OUT
 CREATE TABLE IF NOT EXISTS `{$prefix}sp_log` (
 `id` int(10) NOT NULL auto_increment,
@@ -102,7 +102,7 @@ KEY `votedon` (`votedon`),
 KEY `phone` (`phone`)
 ) ENGINE=InnoDB COMMENT='Log table for SimplePolls plugin.';
 OUT;
-        $flag &= $this->modx->db->query($sql);
-        return $flag;
+        $this->modx->db->query($sql);
+        return true;
     }
 }
